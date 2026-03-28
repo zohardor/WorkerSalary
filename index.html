@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#1a1f2e" />
+  <meta name="description" content="מערכת ניהול שכר עובדת זרה" />
+  <title>שכרון – ניהול שכר עובדת זרה</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1f2e;
+      --surface2: #232840;
+      --surface3: #2d3352;
+      --accent: #5b7fff;
+      --accent2: #a78bfa;
+      --success: #34d399;
+      --warn: #fbbf24;
+      --danger: #f87171;
+      --shabbat: #f97316;
+      --holiday: #818cf8;
+      --text: #e8eaf6;
+      --text2: #9ba4c0;
+      --text3: #5a6280;
+      --border: #2d3352;
+      --radius: 14px;
+      --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Heebo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      direction: rtl;
+    }
+
+    /* ── TOP NAV ── */
+    .top-bar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      height: 62px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      font-size: 22px;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.5px;
+      white-space: nowrap;
+    }
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      margin-right: auto;
+    }
+    .nav-tab {
+      padding: 8px 18px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--text2);
+      font-size: 14px;
+      font-family: 'Heebo', sans-serif;
+      cursor: pointer;
+      transition: all .2s;
+      font-weight: 500;
+    }
+    .nav-tab.active, .nav-tab:hover {
+      background: var(--surface2);
+      color: var(--text);
+    }
+    .nav-tab.active { color: var(--accent); }
+
+    .sync-btn {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all .2s;
+    }
+    .sync-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── MAIN LAYOUT ── */
+    .main { padding: 24px 20px; max-width: 1100px; margin: 0 auto; }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .icon { font-size: 18px; }
+
+    /* ── FORM ── */
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .form-grid.single { grid-template-columns: 1fr; }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .form-group label {
+      font-size: 13px;
+      color: var(--text2);
+      font-weight: 500;
+    }
+    .form-group input, .form-group select, .form-group textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: 'Heebo', sans-serif;
+      padding: 10px 12px;
+      transition: border-color .2s;
+      outline: none;
+      direction: rtl;
+    }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+      border-color: var(--accent);
+    }
+    .form-group textarea { resize: vertical; min-height: 70px; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      font-family: 'Heebo', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text2);
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-success { background: var(--success); color: #0f1117; }
+    .btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-val {
+      font-size: 26px;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+    /* ── FILE UPLOAD ── */
+    .file-drop {
+      border: 2px dashed var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color .2s;
+      color: var(--text3);
+      font-size: 13px;
+    }
+    .file-drop:hover { border-color: var(--accent); color: var(--text2); }
+    .file-drop input[type=file] { display: none; }
+    .file-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .file-item {
+      background: var(--surface2);
+      border-radius: 6px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+    }
+    .file-item-name { display: flex; align-items: center; gap: 8px; color: var(--text); }
+
+    /* ── CALENDAR ── */
+    .cal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .cal-month-label { font-size: 18px; font-weight: 700; }
+    .cal-nav { background: transparent; border: 1px solid var(--border); color: var(--text2); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 16px; }
+    .cal-nav:hover { border-color: var(--accent); color: var(--accent); }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-day-name { text-align: center; font-size: 11px; color: var(--text3); padding: 6px 0; font-weight: 600; }
+    .cal-day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all .15s;
+      position: relative;
+      user-select: none;
+      min-height: 40px;
+    }
+    .cal-day:hover { background: var(--surface3); }
+    .cal-day.empty { cursor: default; }
+    .cal-day.today { border-color: var(--accent); }
+    .cal-day.shabbat-worked { background: rgba(249,115,22,0.25); border-color: var(--shabbat); color: var(--shabbat); font-weight: 700; }
+    .cal-day.holiday-worked { background: rgba(129,140,248,0.25); border-color: var(--holiday); color: var(--holiday); font-weight: 700; }
+    .cal-day.is-shabbat:not(.shabbat-worked) { color: var(--shabbat); opacity: 0.5; }
+    .cal-day.is-holiday:not(.holiday-worked) { color: var(--holiday); opacity: 0.5; }
+    .cal-day .hol-dot {
+      width: 5px; height: 5px;
+      border-radius: 50%;
+      background: var(--holiday);
+      position: absolute;
+      bottom: 4px;
+    }
+    .cal-legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
+    .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+    /* ── MONTH LIST ── */
+    .month-entry {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: border-color .2s;
+    }
+    .month-entry:hover { border-color: var(--accent); }
+    .month-entry .me-date { font-weight: 700; font-size: 15px; min-width: 90px; }
+    .month-entry .me-info { flex: 1; display: flex; gap: 20px; flex-wrap: wrap; }
+    .me-chip {
+      background: var(--surface3);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 12px;
+      color: var(--text2);
+    }
+    .me-chip.shab { background: rgba(249,115,22,0.2); color: var(--shabbat); }
+    .me-chip.hol { background: rgba(129,140,248,0.2); color: var(--holiday); }
+    .me-total { font-weight: 700; font-size: 17px; color: var(--success); white-space: nowrap; }
+
+    /* ── MODAL ── */
+    .modal-bg {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    .modal-bg.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      width: 100%;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: var(--shadow);
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .modal-title { font-size: 18px; font-weight: 700; }
+    .modal-close { background: transparent; border: none; color: var(--text3); font-size: 22px; cursor: pointer; line-height: 1; }
+    .modal-close:hover { color: var(--danger); }
+    .modal-footer { margin-top: 24px; display: flex; gap: 10px; justify-content: flex-end; }
+
+    /* ── VACATION TRACKER ── */
+    .vacation-bar { background: var(--surface2); border-radius: 8px; height: 8px; margin-top: 6px; overflow: hidden; }
+    .vacation-fill { height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .4s; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 20px; font-size: 14px;
+      z-index: 999; opacity: 0; transition: opacity .3s;
+      pointer-events: none;
+    }
+    #toast.show { opacity: 1; }
+
+    /* ── REPORT PREVIEW ── */
+    #report-preview {
+      display: none;
+      background: white;
+      color: #111;
+      padding: 40px;
+      border-radius: 8px;
+      font-family: 'Heebo', sans-serif;
+      direction: rtl;
+      max-width: 750px;
+      margin: 0 auto;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
+      .nav-tabs { gap: 2px; }
+      .nav-tab { padding: 6px 10px; font-size: 13px; }
+      .main { padding: 16px 12px; }
+    }
+
+    /* ── VACATION DAYS COUNT ── */
+    .vac-summary {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .vac-pill {
+      background: var(--surface2);
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+    }
+    .vac-pill span { color: var(--accent); font-weight: 700; }
+
+    .section-actions { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="logo">שכרון ✦</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showScreen('screen-worker')">👤 פרטי עובדת</button>
+    <button class="nav-tab" onclick="showScreen('screen-salary')">📅 ניהול חודשי</button>
+  </div>
+  <button class="sync-btn" onclick="syncGist()" title="שמור לענן GitHub Gist">☁️ סנכרן</button>
+</div>
+
+<div class="main">
+
+  <!-- ══════════════ SCREEN 1: WORKER ══════════════ -->
+  <div id="screen-worker" class="screen active">
+
+    <div class="stats-row" id="worker-stats">
+      <div class="stat-card">
+        <div class="stat-val" id="stat-name">—</div>
+        <div class="stat-label">שם העובדת</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="stat-base">₪0</div>
+        <div class="stat-label">שכר בסיס</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="stat-vac-left">0</div>
+        <div class="stat-label">ימי חופשה נותרים</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="stat-vac-used">0</div>
+        <div class="stat-label">ימי חופשה שנוצלו</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">👤</span> פרטים אישיים</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>שם מלא</label>
+          <input type="text" id="w-name" placeholder="שם פרטי ומשפחה" oninput="saveWorker()" />
+        </div>
+        <div class="form-group">
+          <label>מספר דרכון</label>
+          <input type="text" id="w-passport" placeholder="A1234567" oninput="saveWorker()" />
+        </div>
+        <div class="form-group">
+          <label>לאומיות / מדינת מוצא</label>
+          <select id="w-nationality" onchange="saveWorker()">
+            <option value="india">הודו 🇮🇳</option>
+            <option value="philippines">פיליפינים 🇵🇭</option>
+            <option value="nepal">נפאל 🇳🇵</option>
+            <option value="myanmar">מיאנמר 🇲🇲</option>
+            <option value="srilanka">סרי לנקה 🇱🇰</option>
+            <option value="other">אחר</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>תאריך תחילת עבודה</label>
+          <input type="date" id="w-start" oninput="saveWorker()" />
+        </div>
+        <div class="form-group">
+          <label>תאריך סיום ויזה</label>
+          <input type="date" id="w-visa" oninput="saveWorker()" />
+        </div>
+        <div class="form-group">
+          <label>טלפון</label>
+          <input type="text" id="w-phone" placeholder="050-0000000" oninput="saveWorker()" />
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">💰</span> תנאי שכר</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>שכר בסיס ברוטו (₪)</label>
+          <input type="number" id="w-base" placeholder="7000" oninput="saveWorker()" />
+        </div>
+        <div class="form-group">
+          <label>תוספת שבת (₪ לכל שבת)</label>
+          <input type="number" id="w-shabbat-bonus" placeholder="200" oninput="saveWorker()" />
+        </div>
+        <div class="form-group">
+          <label>תוספת חג (₪ לכל חג)</label>
+          <input type="number" id="w-holiday-bonus" placeholder="150" oninput="saveWorker()" />
+        </div>
+        <div class="form-group">
+          <label>ימי חופשה שנתיים זכאות</label>
+          <input type="number" id="w-vac-total" placeholder="14" oninput="saveWorker()" />
+        </div>
+        <div class="form-group">
+          <label>ימי מחלה שנתיים</label>
+          <input type="number" id="w-sick-total" placeholder="18" oninput="saveWorker()" />
+        </div>
+        <div class="form-group">
+          <label>ימי חופשה שנוצלו</label>
+          <input type="number" id="w-vac-used" placeholder="0" oninput="saveWorker()" />
+        </div>
+      </div>
+      <div style="margin-top:16px;">
+        <div style="font-size:13px; color:var(--text2); margin-bottom:6px;">ניצול חופשה</div>
+        <div class="vac-summary">
+          <div class="vac-pill">זכאות: <span id="vac-total-disp">0</span> ימים</div>
+          <div class="vac-pill">נוצל: <span id="vac-used-disp">0</span> ימים</div>
+          <div class="vac-pill">נותר: <span id="vac-left-disp">0</span> ימים</div>
+        </div>
+        <div class="vacation-bar" style="margin-top:10px; max-width:400px;">
+          <div class="vacation-fill" id="vac-bar" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="icon">📎</span> מסמכים</div>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+        <div>
+          <div style="font-size:13px; color:var(--text2); margin-bottom:8px;">📷 צילום דרכון</div>
+          <div class="file-drop" onclick="document.getElementById('file-passport').click()">
+            <input type="file" id="file-passport" accept="image/*,application/pdf" onchange="handleFile('passport',this)" />
+            <div>לחץ להוספת צילום דרכון</div>
+          </div>
+          <div class="file-list" id="list-passport"></div>
+        </div>
+        <div>
+          <div style="font-size:13px; color:var(--text2); margin-bottom:8px;">📄 חוזה עבודה</div>
+          <div class="file-drop" onclick="document.getElementById('file-contract').click()">
+            <input type="file" id="file-contract" accept="image/*,application/pdf" onchange="handleFile('contract',this)" />
+            <div>לחץ להוספת חוזה</div>
+          </div>
+          <div class="file-list" id="list-contract"></div>
+        </div>
+        <div>
+          <div style="font-size:13px; color:var(--text2); margin-bottom:8px;">📋 נספחים לחוזה</div>
+          <div class="file-drop" onclick="document.getElementById('file-annex').click()">
+            <input type="file" id="file-annex" accept="image/*,application/pdf" multiple onchange="handleFile('annex',this)" />
+            <div>לחץ להוספת נספחים (ניתן לבחור מספר קבצים)</div>
+          </div>
+          <div class="file-list" id="list-annex"></div>
+        </div>
+        <div>
+          <div style="font-size:13px; color:var(--text2); margin-bottom:8px;">🗂️ מסמכים נוספים</div>
+          <div class="file-drop" onclick="document.getElementById('file-other').click()">
+            <input type="file" id="file-other" accept="*/*" multiple onchange="handleFile('other',this)" />
+            <div>לחץ להוספת מסמכים</div>
+          </div>
+          <div class="file-list" id="list-other"></div>
+        </div>
+      </div>
+      <div style="margin-top:16px; text-align:left;">
+        <button class="btn btn-outline btn-sm" onclick="exportJSON()">⬇️ ייצא נתונים (JSON)</button>
+        <button class="btn btn-outline btn-sm" onclick="importJSON()" style="margin-right:8px;">⬆️ ייבא נתונים</button>
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="doImport(this)" />
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════ SCREEN 2: SALARY ══════════════ -->
+  <div id="screen-salary" class="screen">
+    <div class="section-actions">
+      <button class="btn btn-primary" onclick="openMonthModal()">＋ הוספת חודש</button>
+      <button class="btn btn-outline" onclick="openMonthModal(null, true)">📊 דוח שכר (PDF)</button>
+    </div>
+    <div id="months-list">
+      <div style="color:var(--text3); text-align:center; padding:40px;">אין חודשים מוגדרים. לחץ "הוספת חודש" להתחיל.</div>
+    </div>
+  </div>
+
+</div><!-- /main -->
+
+<!-- ══════════════ MONTH MODAL ══════════════ -->
+<div class="modal-bg" id="month-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-title-text">ניהול חודש</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <input type="hidden" id="editing-month-key" />
+
+    <div class="form-grid" style="margin-bottom:20px;">
+      <div class="form-group">
+        <label>חודש ושנה</label>
+        <input type="month" id="m-month" onchange="renderCalendar()" />
+      </div>
+      <div class="form-group">
+        <label>שכר בסיס ברוטו (₪)</label>
+        <input type="number" id="m-base" placeholder="מהחוזה" />
+      </div>
+      <div class="form-group">
+        <label>החזר הוצאות (₪)</label>
+        <input type="number" id="m-expenses" placeholder="0" value="0" />
+      </div>
+      <div class="form-group">
+        <label>הערות</label>
+        <input type="text" id="m-notes" placeholder="הערות חופשיות..." />
+      </div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="card-title"><span class="icon">📅</span> לוח שנה – סמן ימי שבת וחג בעבודה</div>
+      <div class="cal-header">
+        <button class="cal-nav" onclick="calNav(-1)">&#8250;</button>
+        <div class="cal-month-label" id="cal-label">—</div>
+        <button class="cal-nav" onclick="calNav(1)">&#8249;</button>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="cal-legend">
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(249,115,22,0.5);border:2px solid var(--shabbat)"></div> שבת שעבדה</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(129,140,248,0.4);border:2px solid var(--holiday)"></div> חג שעבדה</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--surface3);border:1px solid var(--border)"></div> שבת רגילה</div>
+        <div class="legend-item"><div class="legend-dot" style="background:transparent;border:1px solid var(--holiday)"></div> חג (לא עבדה)</div>
+      </div>
+
+      <div style="margin-top:16px; display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
+        <div style="font-size:13px; color:var(--text2);">סיכום: <strong id="sum-shabbat" style="color:var(--shabbat)">0</strong> שבתות | <strong id="sum-holidays" style="color:var(--holiday)">0</strong> חגים</div>
+        <div style="font-size:13px; color:var(--success); font-weight:700;">סה״כ משוער: ₪<span id="sum-total">0</span></div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="delete-month-btn" onclick="deleteMonth()" style="display:none; margin-left:auto;">🗑️ מחק</button>
+      <button class="btn btn-outline" onclick="closeModal()">ביטול</button>
+      <button class="btn btn-primary" onclick="saveMonth()">💾 שמור חודש</button>
+      <button class="btn btn-success" onclick="generatePDF()">📄 PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- PDF PREVIEW (hidden, used for capture) -->
+<div id="report-preview"></div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script src="holidays.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -52,10 +52,18 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const idx = id === 'screen-worker' ? 0 : id === 'screen-salary' ? 1 : 2;
+  const idx = ['screen-worker','screen-salary','screen-costs','screen-guide'].indexOf(id);
   document.querySelectorAll('.nav-tab')[idx].classList.add('active');
   if (id === 'screen-salary') renderMonthsList();
   if (id === 'screen-costs') { populateRatesForm(); renderCostsScreen(); }
+}
+
+function showPhase(phase) {
+  ['before','during','end'].forEach(p => {
+    document.getElementById('phase-' + p).style.display = p === phase ? 'block' : 'none';
+    const btn = document.getElementById('btn-' + p);
+    if (btn) btn.classList.toggle('active', p === phase);
+  });
 }
 
 // ─────────────── WORKER FORM ───────────────

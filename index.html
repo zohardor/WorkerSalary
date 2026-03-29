@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#1a1f2e" />
   <meta name="description" content="מערכת ניהול שכר עובדת זרה" />
+  <!-- SHAKARON v2026-03-29 -->
   <title>שכרון – ניהול שכר עובדת זרה</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
@@ -395,6 +396,128 @@
     .vac-pill span { color: var(--accent); font-weight: 700; }
 
     .section-actions { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    /* ── GUIDE ── */
+    .guide-phase-btn {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+      font-size: 13px;
+      font-family: 'Heebo', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .guide-phase-btn.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+      border-color: transparent;
+    }
+    .guide-phase-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+
+    .timeline { display: flex; flex-direction: column; gap: 0; }
+    .tl-item {
+      display: flex;
+      gap: 16px;
+      position: relative;
+    }
+    .tl-item:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      right: 17px;
+      top: 40px;
+      bottom: -4px;
+      width: 2px;
+      background: linear-gradient(to bottom, var(--border), transparent);
+    }
+    .tl-dot {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 14px;
+      color: white;
+      flex-shrink: 0;
+      margin-top: 2px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .tl-content {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      transition: border-color .2s;
+    }
+    .tl-content:hover { border-color: var(--accent); }
+    .tl-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .tl-body p { font-size: 13px; color: var(--text2); margin-bottom: 10px; line-height: 1.6; }
+    .tl-checklist { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
+    .chk {
+      font-size: 13px;
+      color: var(--text2);
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: var(--surface2);
+      cursor: default;
+    }
+    .tl-tip {
+      font-size: 12px;
+      color: var(--accent);
+      background: rgba(91,127,255,0.1);
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-top: 6px;
+    }
+    .tl-facts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .fact-item {
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 10px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .fact-num {
+      font-size: 24px;
+      font-weight: 900;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .fact-item span:last-child { font-size: 11px; color: var(--text2); }
+    .link-card {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      text-decoration: none;
+      transition: all .2s;
+    }
+    .link-card:hover { border-color: var(--accent); color: var(--accent); }
+
   </style>
 </head>
 <body>
@@ -405,6 +528,7 @@
     <button class="nav-tab active" onclick="showScreen('screen-worker')">👤 פרטי עובדת</button>
     <button class="nav-tab" onclick="showScreen('screen-salary')">📅 ניהול חודשי</button>
     <button class="nav-tab" onclick="showScreen('screen-costs')">💼 הוצאות מעסיק</button>
+    <button class="nav-tab" onclick="showScreen('screen-guide')">📖 מדריך</button>
   </div>
   <button class="sync-btn" onclick="syncGist()" title="שמור לענן GitHub Gist">☁️ סנכרן</button>
 </div>
@@ -649,6 +773,266 @@
       <div class="card-title"><span class="icon">📋</span> פירוט חודשי – הוצאות מעסיק</div>
       <div id="costs-table-container">
         <div style="color:var(--text3);text-align:center;padding:32px;">אין חודשים מוגדרים עדיין</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════ SCREEN 4: GUIDE ══════════════ -->
+  <div id="screen-guide" class="screen">
+
+    <div style="text-align:center;margin-bottom:28px;">
+      <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">מדריך העסקת עובדת זרה</div>
+      <div style="color:var(--text2);font-size:14px;margin-top:6px;">מהגיוס ועד סיום ההעסקה – כל מה שצריך לדעת</div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;">
+      <button class="guide-phase-btn active" onclick="showPhase('before')" id="btn-before">⏳ לפני ההעסקה</button>
+      <button class="guide-phase-btn" onclick="showPhase('during')" id="btn-during">🔄 במהלך ההעסקה</button>
+      <button class="guide-phase-btn" onclick="showPhase('end')" id="btn-end">🏁 סיום העסקה</button>
+    </div>
+
+    <div id="phase-before" class="guide-phase">
+      <div class="timeline">
+
+        <div class="tl-item">
+          <div class="tl-dot" style="background:#6366f1;">1</div>
+          <div class="tl-content">
+            <div class="tl-title">🔍 גיוס וסוכנות</div>
+            <div class="tl-body">
+              <p>בחר סוכנות כוח אדם מורשית (רישיון מטעם משרד הפנים). וודא שהסוכנות מתמחה בעובדות סיעוד.</p>
+              <div class="tl-checklist">
+                <div class="chk">☐ קבל רשימת עובדות זמינות עם קורות חיים</div>
+                <div class="chk">☐ וודא ניסיון בסיעוד / טיפול בקשישים</div>
+                <div class="chk">☐ בקש תעודות הכשרה ואישורי ניסיון</div>
+                <div class="chk">☐ שאל על עלויות הסוכנות (חד-פעמי)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tl-item">
+          <div class="tl-dot" style="background:#8b5cf6;">2</div>
+          <div class="tl-content">
+            <div class="tl-title">🛂 ויזה ואשרת כניסה</div>
+            <div class="tl-body">
+              <p>העובדת זקוקה לאשרת עבודה מסוג B/1 (עובד זר). הסוכנות בדרך כלל מטפלת בזה.</p>
+              <div class="tl-checklist">
+                <div class="chk">☐ הגש בקשה דרך רשות האוכלוסין וההגירה</div>
+                <div class="chk">☐ צרף מסמכי מטופל (צורך רפואי מוכח)</div>
+                <div class="chk">☐ קבל אישור עסקה ממשרד הפנים</div>
+                <div class="chk">☐ וודא תוקף דרכון (מינימום 18 חודשים)</div>
+              </div>
+              <div class="tl-tip">⏱️ זמן עיבוד: 4–8 שבועות בממוצע</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tl-item">
+          <div class="tl-dot" style="background:#a855f7;">3</div>
+          <div class="tl-content">
+            <div class="tl-title">📄 חוזה עבודה והסכם</div>
+            <div class="tl-body">
+              <p>חובה לחתום על חוזה בכתב לפני תחילת העבודה, בשפה שהעובדת מבינה.</p>
+              <div class="tl-checklist">
+                <div class="chk">☐ שכר בסיס (לא פחות מהמינימום: ₪6,365 נכון ל-2025)</div>
+                <div class="chk">☐ שעות עבודה ותנאי מגורים</div>
+                <div class="chk">☐ ימי חופשה, חגים, מחלה</div>
+                <div class="chk">☐ תוספות שבת וחג</div>
+                <div class="chk">☐ תנאי סיום העסקה</div>
+              </div>
+              <div class="tl-tip">💡 שמור עותק חתום באפליקציה (מסך "פרטי עובדת")</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tl-item">
+          <div class="tl-dot" style="background:#c084fc;">4</div>
+          <div class="tl-content">
+            <div class="tl-title">🏛️ ביטוח לאומי ורישום כמעסיק</div>
+            <div class="tl-body">
+              <p>מיד עם תחילת העבודה יש להירשם כמעסיק בביטוח לאומי.</p>
+              <div class="tl-checklist">
+                <div class="chk">☐ פתח תיק מעסיק בביטוח לאומי (מקוון / סניף)</div>
+                <div class="chk">☐ חלק מעסיק: 3.55% (בריאות + נפגעי עבודה)</div>
+                <div class="chk">☐ חלק עובד: 3.5% (מנוכה ממשכורת)</div>
+                <div class="chk">☐ שלם עד ה-15 לחודש שאחרי</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tl-item">
+          <div class="tl-dot" style="background:#e879f9;">5</div>
+          <div class="tl-content">
+            <div class="tl-title">🏦 פתיחת חשבון בנק לעובדת</div>
+            <div class="tl-body">
+              <p>חובה חוקית לשלם את השכר לחשבון בנק של העובדת (לא במזומן).</p>
+              <div class="tl-checklist">
+                <div class="chk">☐ לווה אותה לסניף בנק (דרכון + ויזה)</div>
+                <div class="chk">☐ פתח חשבון עו"ש בסיסי</div>
+                <div class="chk">☐ הגדר העברה קבועה מדי חודש</div>
+                <div class="chk">☐ שמור פרטי חשבון בחוזה</div>
+              </div>
+              <div class="tl-tip">🏦 בנק הדואר ידידותי במיוחד לעובדים זרים</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="phase-during" class="guide-phase" style="display:none;">
+      <div class="timeline">
+
+        <div class="tl-item">
+          <div class="tl-dot" style="background:#0ea5e9;">6</div>
+          <div class="tl-content">
+            <div class="tl-title">💰 תשלום שכר חודשי</div>
+            <div class="tl-body">
+              <p>השכר חייב להשתלם לא יאוחר מהיום ה-9 לחודש שאחרי.</p>
+              <div class="tl-checklist">
+                <div class="chk">☐ שכר בסיס + תוספות שבת / חג</div>
+                <div class="chk">☐ הפקד לחשבון הבנק של העובדת</div>
+                <div class="chk">☐ שלם ביטוח לאומי (עד ה-15)</div>
+                <div class="chk">☐ תעד בשכרון (מסך "ניהול חודשי")</div>
+              </div>
+              <div class="tl-tip">📲 השתמש בלוח השנה לסימון שבתות וחגים</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tl-item">
+          <div class="tl-dot" style="background:#38bdf8;">7</div>
+          <div class="tl-content">
+            <div class="tl-title">🎉 זכויות העובדת – חופשה, מחלה, חגים</div>
+            <div class="tl-body">
+              <p>העובדת זכאית לחגים ולחופשה שנתית בתשלום.</p>
+              <div class="tl-facts">
+                <div class="fact-item">
+                  <span class="fact-num">12</span>
+                  <span>ימי חג שנתיים</span>
+                </div>
+                <div class="fact-item">
+                  <span class="fact-num">14</span>
+                  <span>ימי חופשה (שנה+)</span>
+                </div>
+                <div class="fact-item">
+                  <span class="fact-num">18</span>
+                  <span>ימי מחלה בשנה</span>
+                </div>
+                <div class="fact-item">
+                  <span class="fact-num">6</span>
+                  <span>ימי הבראה (שנה+)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tl-item">
+          <div class="tl-dot" style="background:#7dd3fc;">8</div>
+          <div class="tl-content">
+            <div class="tl-title">🔄 חידוש ויזה</div>
+            <div class="tl-body">
+              <p>ויזת עובד זר תקפה לשנה, יש לחדש לפני פקיעה.</p>
+              <div class="tl-checklist">
+                <div class="chk">☐ התחל תהליך 3 חודשים לפני פקיעה</div>
+                <div class="chk">☐ הגש בקשת הארכה לרשות האוכלוסין</div>
+                <div class="chk">☐ צרף הצהרת המשך העסקה</div>
+                <div class="chk">☐ עדכן תאריך בשכרון (מסך "פרטי עובדת")</div>
+              </div>
+              <div class="tl-tip">⚠️ עבודה עם ויזה פגת תוקף = קנס כבד על המעסיק!</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tl-item">
+          <div class="tl-dot" style="background:#bae6fd;">9</div>
+          <div class="tl-content">
+            <div class="tl-title">📋 מעקב שוטף ותיעוד</div>
+            <div class="tl-body">
+              <p>שמור תיעוד מסודר לכל אורך ההעסקה.</p>
+              <div class="tl-checklist">
+                <div class="chk">☐ תלוש שכר חודשי (PDF מהאפליקציה)</div>
+                <div class="chk">☐ קבלות על תשלומי ביטוח לאומי</div>
+                <div class="chk">☐ יומן ימי היעדרות / חופשות</div>
+                <div class="chk">☐ סנכרן לענן (כפתור ☁️ בראש המסך)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div id="phase-end" class="guide-phase" style="display:none;">
+      <div class="timeline">
+
+        <div class="tl-item">
+          <div class="tl-dot" style="background:#10b981;">10</div>
+          <div class="tl-content">
+            <div class="tl-title">📢 הודעה מוקדמת</div>
+            <div class="tl-body">
+              <p>חובה לתת הודעה מוקדמת לפי הוותק.</p>
+              <div class="tl-facts">
+                <div class="fact-item">
+                  <span class="fact-num">1</span>
+                  <span>חודש לכל שנת עבודה (עד 6)</span>
+                </div>
+              </div>
+              <div class="tl-checklist">
+                <div class="chk">☐ הסכם כתוב על סיום העסקה</div>
+                <div class="chk">☐ הגדר תאריך סיום מוסכם</div>
+                <div class="chk">☐ הכן חשבון סופי</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tl-item">
+          <div class="tl-dot" style="background:#34d399;">11</div>
+          <div class="tl-content">
+            <div class="tl-title">💸 חשבון סופי ופיצויים</div>
+            <div class="tl-body">
+              <p>בסיום העסקה יש לשלם את כל המגיע לעובדת בתוך 14 יום.</p>
+              <div class="tl-checklist">
+                <div class="chk">☐ שכר לתקופה שעבדה (כולל פרו-רטה)</div>
+                <div class="chk">☐ פדיון חופשה שלא נוצלה</div>
+                <div class="chk">☐ פיצויי פיטורים (שנה+): שכר × שנות עבודה</div>
+                <div class="chk">☐ הבראה יחסית לשנה החלקית</div>
+              </div>
+              <div class="tl-tip">💡 פיצויים = שכר בסיס אחרון × מספר שנות עבודה</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tl-item">
+          <div class="tl-dot" style="background:#6ee7b7;">12</div>
+          <div class="tl-content">
+            <div class="tl-title">🏛️ סגירת תיק ביטוח לאומי</div>
+            <div class="tl-body">
+              <div class="tl-checklist">
+                <div class="chk">☐ הגש דיווח סיום העסקה לביטוח לאומי</div>
+                <div class="chk">☐ שלם יתרת חובות (אם יש)</div>
+                <div class="chk">☐ קבל אישור סגירת תיק</div>
+                <div class="chk">☐ הודע לרשות האוכלוסין על סיום</div>
+              </div>
+              <div class="tl-tip">📎 שמור את כל המסמכים 7 שנים לפחות</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
+      <div class="card-title"><span class="icon">🔗</span> קישורים שימושיים</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
+        <a href="https://www.btl.gov.il" target="_blank" class="link-card">🏛️ ביטוח לאומי</a>
+        <a href="https://www.piba.gov.il" target="_blank" class="link-card">🛂 רשות האוכלוסין וההגירה</a>
+        <a href="https://www.gov.il/he/departments/ministry_of_labor" target="_blank" class="link-card">⚖️ משרד העבודה</a>
+        <a href="https://www.kolzchut.org.il" target="_blank" class="link-card">📚 כל זכות – עובד זר</a>
       </div>
     </div>
 

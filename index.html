@@ -479,6 +479,22 @@
       padding: 6px 10px;
       margin-top: 6px;
     }
+    .tl-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: var(--accent);
+      background: rgba(91,127,255,0.08);
+      border: 1px solid rgba(91,127,255,0.25);
+      border-radius: 6px;
+      padding: 5px 10px;
+      margin-top: 5px;
+      margin-left: 6px;
+      text-decoration: none;
+      transition: all .2s;
+    }
+    .tl-link:hover { background: rgba(91,127,255,0.18); border-color: var(--accent); }
     .tl-facts {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
@@ -525,10 +541,10 @@
 <div class="top-bar">
   <div class="logo">שכרון ✦</div>
   <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showScreen('screen-worker')">👤 פרטי עובדת</button>
+    <button class="nav-tab active" onclick="showScreen('screen-guide')">📖 מדריך</button>
+    <button class="nav-tab" onclick="showScreen('screen-worker')">👤 פרטי עובדת</button>
     <button class="nav-tab" onclick="showScreen('screen-salary')">📅 ניהול חודשי</button>
     <button class="nav-tab" onclick="showScreen('screen-costs')">💼 הוצאות מעסיק</button>
-    <button class="nav-tab" onclick="showScreen('screen-guide')">📖 מדריך</button>
   </div>
   <button class="sync-btn" onclick="syncGist()" title="שמור לענן GitHub Gist">☁️ סנכרן</button>
 </div>
@@ -536,7 +552,7 @@
 <div class="main">
 
   <!-- ══════════════ SCREEN 1: WORKER ══════════════ -->
-  <div id="screen-worker" class="screen active">
+  <div id="screen-worker" class="screen">
 
     <div class="stats-row" id="worker-stats">
       <div class="stat-card">
@@ -779,7 +795,7 @@
   </div>
 
   <!-- ══════════════ SCREEN 4: GUIDE ══════════════ -->
-  <div id="screen-guide" class="screen">
+  <div id="screen-guide" class="screen active">
 
     <div style="text-align:center;margin-bottom:28px;">
       <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">מדריך העסקת עובדת זרה</div>
@@ -807,6 +823,7 @@
                 <div class="chk">☐ בקש תעודות הכשרה ואישורי ניסיון</div>
                 <div class="chk">☐ שאל על עלויות הסוכנות (חד-פעמי)</div>
               </div>
+              <a href="https://www.gov.il/he/pages/list_of_liscensed_manpower_companies_foreign_workers" target="_blank" class="tl-link">🔗 רשימת לשכות מורשות – gov.il</a>
             </div>
           </div>
         </div>
@@ -824,6 +841,8 @@
                 <div class="chk">☐ וודא תוקף דרכון (מינימום 18 חודשים)</div>
               </div>
               <div class="tl-tip">⏱️ זמן עיבוד: 4–8 שבועות בממוצע</div>
+              <a href="https://www.gov.il/he/service/foreign-caregiver-permit" target="_blank" class="tl-link">🔗 בקשה להיתר עובד זר סיעוד – gov.il</a>
+              <a href="https://www.gov.il/he/pages/list_of_liscensed_manpower_companies_foreign_workers" target="_blank" class="tl-link">🔗 רשימת לשכות מורשות – gov.il</a>
             </div>
           </div>
         </div>
@@ -842,6 +861,7 @@
                 <div class="chk">☐ תנאי סיום העסקה</div>
               </div>
               <div class="tl-tip">💡 שמור עותק חתום באפליקציה (מסך "פרטי עובדת")</div>
+              <a href="https://mb-din.co.il/" target="_blank" class="tl-link" style="border-color:rgba(167,139,250,0.4);color:var(--accent2);">👩‍⚖️ ייעוץ וניסוח חוזה – עו״ד MB דין</a>
             </div>
           </div>
         </div>
@@ -858,6 +878,8 @@
                 <div class="chk">☐ חלק עובד: 3.5% (מנוכה ממשכורת)</div>
                 <div class="chk">☐ שלם עד ה-15 לחודש שאחרי</div>
               </div>
+              <a href="https://b2b.btl.gov.il/BTL.ILG.Payments/MeshekBaitOpenForm.aspx" target="_blank" class="tl-link">🔗 פתיחת תיק מעסיק מקוון – ביטוח לאומי</a>
+              <a href="https://www.btl.gov.il/Insurance/Maasik/Pages/mekabelSiud.aspx" target="_blank" class="tl-link">🔗 דיווח ותשלום – עובד זר סיעוד</a>
             </div>
           </div>
         </div>
@@ -1028,11 +1050,44 @@
 
     <div class="card" style="margin-top:24px;">
       <div class="card-title"><span class="icon">🔗</span> קישורים שימושיים</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
-        <a href="https://www.btl.gov.il" target="_blank" class="link-card">🏛️ ביטוח לאומי</a>
+
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">🏢 גיוס – לשכות וסוכנויות מורשות</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:16px;">
+        <a href="https://www.gov.il/he/pages/list_of_liscensed_manpower_companies_foreign_workers" target="_blank" class="link-card">📋 רשימת לשכות מורשות – gov.il</a>
+        <a href="https://caregiving.co.il" target="_blank" class="link-card">🌿 אביעזר בבית – תאגיד סיעוד</a>
+        <a href="https://www.matav.org.il/עובדים-זרים-לסיעוד/" target="_blank" class="link-card">🤝 מטב – עמותת סיעוד</a>
+        <a href="https://kav-lamaasik.co.il/מדריך-להעסקת-עובד-זר/" target="_blank" class="link-card">📖 קו למעסיק – מדריך מלא</a>
+      </div>
+
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">🏛️ ביטוח לאומי</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:16px;">
+        <a href="https://b2b.btl.gov.il/BTL.ILG.Payments/MeshekBaitOpenForm.aspx" target="_blank" class="link-card">➕ פתיחת תיק מעסיק – משק בית</a>
+        <a href="https://www.btl.gov.il/Insurance/Maasik/Pages/mekabelSiud.aspx" target="_blank" class="link-card">📊 דיווח ותשלום – עובד זר סיעוד</a>
+        <a href="https://www.btl.gov.il/Insurance/National%20Insurance/type_list/House_keeper/Pages/HovotMaasikMeshekBait.aspx" target="_blank" class="link-card">📅 לוח תשלומים רבעוני</a>
+        <a href="https://www.kolzchut.org.il/he/דיווח_ותשלום_דמי_ביטוח_לאומי_עבור_עובד_זר_בסיעוד" target="_blank" class="link-card">📚 כל זכות – ב"ל לעובד זר סיעוד</a>
+      </div>
+
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">🛂 ויזה ואשרות</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:16px;">
+        <a href="https://www.gov.il/he/service/foreign-caregiver-permit" target="_blank" class="link-card">📝 בקשה להיתר עובד זר סיעוד</a>
         <a href="https://www.piba.gov.il" target="_blank" class="link-card">🛂 רשות האוכלוסין וההגירה</a>
+      </div>
+
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">⚖️ זכויות וחוקי עבודה</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;">
         <a href="https://www.gov.il/he/departments/ministry_of_labor" target="_blank" class="link-card">⚖️ משרד העבודה</a>
-        <a href="https://www.kolzchut.org.il" target="_blank" class="link-card">📚 כל זכות – עובד זר</a>
+        <a href="https://www.kolzchut.org.il" target="_blank" class="link-card">📚 כל זכות – מדריך מקיף</a>
+        <a href="https://www.reutheshel.org.il/חברות-כוח-אדם-לעובדים-זרים-תאגידים" target="_blank" class="link-card">🔍 מרכז מידע רעות</a>
+        <a href="https://mb-din.co.il/" target="_blank" class="link-card" style="border-color:rgba(167,139,250,0.4);background:rgba(167,139,250,0.07);">👩‍⚖️ ייעוץ משפטי – עו״ד MB דין <span style="font-size:10px;color:var(--accent2);margin-right:4px;">מומלץ</span></a>
+      </div>
+
+      <div style="margin-top:14px;padding:10px 14px;background:rgba(91,127,255,0.08);border-radius:8px;border:1px solid rgba(91,127,255,0.2);font-size:12px;color:var(--text2);">
+        💡 <strong style="color:var(--text);">תזכורת תשלום ב"ל:</strong> 4 פעמים בשנה –
+        <span style="color:var(--accent);">20 אפריל</span> (ינ׳–מרץ) ·
+        <span style="color:var(--accent);">20 יולי</span> (אפר׳–יוני) ·
+        <span style="color:var(--accent);">20 אוקטובר</span> (יול׳–ספט׳) ·
+        <span style="color:var(--accent);">20 ינואר</span> (אוק׳–דצמ׳)
+        <br>שיעור דמי ביטוח לאומי מינואר 2025: <strong style="color:var(--accent);">3.6%</strong> מהשכר המשולם
       </div>
     </div>
 

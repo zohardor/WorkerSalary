@@ -52,7 +52,7 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const idx = ['screen-worker','screen-salary','screen-costs','screen-guide'].indexOf(id);
+  const idx = ['screen-guide','screen-worker','screen-salary','screen-costs'].indexOf(id);
   document.querySelectorAll('.nav-tab')[idx].classList.add('active');
   if (id === 'screen-salary') renderMonthsList();
   if (id === 'screen-costs') { populateRatesForm(); renderCostsScreen(); }

@@ -545,6 +545,7 @@
     <button class="nav-tab" onclick="showScreen('screen-worker')">👤 פרטי עובדת</button>
     <button class="nav-tab" onclick="showScreen('screen-salary')">📅 ניהול חודשי</button>
     <button class="nav-tab" onclick="showScreen('screen-costs')">💼 הוצאות מעסיק</button>
+    <button class="nav-tab" onclick="showScreen('screen-premium')" style="color:var(--warn);">⭐ פרימיום</button>
   </div>
   <button class="sync-btn" onclick="syncGist()" title="שמור לענן GitHub Gist">☁️ סנכרן</button>
 </div>
@@ -1088,6 +1089,108 @@
         <span style="color:var(--accent);">20 אוקטובר</span> (יול׳–ספט׳) ·
         <span style="color:var(--accent);">20 ינואר</span> (אוק׳–דצמ׳)
         <br>שיעור דמי ביטוח לאומי מינואר 2025: <strong style="color:var(--accent);">3.6%</strong> מהשכר המשולם
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════ SCREEN 5: PREMIUM ══════════════ -->
+  <div id="screen-premium" class="screen">
+
+    <!-- Hero -->
+    <div style="text-align:center;padding:32px 20px 24px;background:linear-gradient(160deg,rgba(91,127,255,0.12),rgba(167,139,250,0.08));border-radius:var(--radius);border:1px solid var(--border);margin-bottom:24px;">
+      <div style="font-size:36px;margin-bottom:8px;">⭐</div>
+      <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">שכרון פרימיום</div>
+      <div style="font-size:15px;color:var(--text2);max-width:480px;margin:0 auto;line-height:1.6;">ניהול מקצועי ומלא של העסקת עובדת זרה — חסכו זמן, הימנעו מטעויות, תישארו מסודרים</div>
+    </div>
+
+    <!-- Feature comparison -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-title"><span class="icon">📊</span> מה כלול בכל תוכנית</div>
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="border-bottom:2px solid var(--border);">
+              <th style="padding:10px 8px;text-align:right;font-weight:700;color:var(--text2);">פיצ'ר</th>
+              <th style="padding:10px 16px;text-align:center;font-weight:700;color:var(--text2);">חינמי</th>
+              <th style="padding:10px 16px;text-align:center;font-weight:700;background:rgba(91,127,255,0.08);border-radius:8px 8px 0 0;color:var(--accent);">פרימיום ⭐</th>
+            </tr>
+          </thead>
+          <tbody id="feature-table-body">
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pricing cards -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center;">
+        <div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:8px;">חודשי</div>
+        <div style="font-size:36px;font-weight:900;color:var(--text);">₪39</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">לחודש</div>
+        <button class="btn btn-outline" style="width:100%;" onclick="openSignup('monthly')">הרשמה לרשימת המתנה</button>
+      </div>
+      <div style="background:linear-gradient(160deg,rgba(91,127,255,0.1),rgba(167,139,250,0.08));border:2px solid var(--accent);border-radius:var(--radius);padding:24px;text-align:center;position:relative;">
+        <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;white-space:nowrap;">הכי משתלם</div>
+        <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:8px;">שנתי</div>
+        <div style="font-size:36px;font-weight:900;color:var(--text);">₪199</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:4px;">לשנה</div>
+        <div style="font-size:11px;color:var(--success);margin-bottom:16px;">חיסכון של ₪269 לעומת חודשי</div>
+        <button class="btn btn-primary" style="width:100%;" onclick="openSignup('yearly')">הרשמה לרשימת המתנה</button>
+      </div>
+    </div>
+
+    <!-- Signup form -->
+    <div class="card" id="signup-card" style="display:none;">
+      <div class="card-title"><span class="icon">✉️</span> הרשמה לרשימת המתנה</div>
+      <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">השאירו פרטים ואעדכן אתכם ברגע שהפרימיום עולה לאוויר. המקדימים יקבלו מחיר השקה מיוחד.</p>
+      <div class="form-grid" style="margin-bottom:16px;">
+        <div class="form-group">
+          <label>שם מלא</label>
+          <input type="text" id="signup-name" placeholder="ישראל ישראלי" />
+        </div>
+        <div class="form-group">
+          <label>אימייל</label>
+          <input type="email" id="signup-email" placeholder="name@example.com" />
+        </div>
+        <div class="form-group">
+          <label>טלפון (אופציונלי)</label>
+          <input type="tel" id="signup-phone" placeholder="050-0000000" />
+        </div>
+        <div class="form-group">
+          <label>תוכנית מועדפת</label>
+          <select id="signup-plan">
+            <option value="yearly">שנתי – ₪199/שנה</option>
+            <option value="monthly">חודשי – ₪39/חודש</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-bottom:16px;">
+        <label>מה הכי חשוב לך באפליקציה? (אופציונלי)</label>
+        <textarea id="signup-feedback" placeholder="למשל: תזכורות אוטומטיות, דוחות לרואה חשבון..." style="height:60px;"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="submitSignup()">📩 שלח הרשמה</button>
+        <button class="btn btn-outline" onclick="document.getElementById('signup-card').style.display='none'">ביטול</button>
+        <span id="signup-msg" style="font-size:13px;color:var(--success);display:none;">✓ נרשמת בהצלחה! נעדכן אותך בקרוב.</span>
+      </div>
+    </div>
+
+    <!-- Social proof placeholder -->
+    <div class="card" style="margin-top:20px;">
+      <div class="card-title"><span class="icon">💬</span> מה אומרים משתמשים</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;">
+          <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px;">"סוף סוף אפליקציה שמבינה מה משפחה עם עובדת זרה צריכה. הלוח שנה עם החגים הציל אותי כל חודש."</div>
+          <div style="font-size:12px;color:var(--text3);">— משפחה מתל אביב</div>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:14px;">
+          <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px;">"המדריך לבד שווה הכל. לא ידעתי כמה עניינים צריך לסגור עד שראיתי את הרשימה."</div>
+          <div style="font-size:12px;color:var(--text3);">— משפחה מחיפה</div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--text3);">
+        <span id="signup-count-display">הצטרפו כבר <strong style="color:var(--accent);">0</strong> משפחות לרשימת המתנה</span>
       </div>
     </div>
 

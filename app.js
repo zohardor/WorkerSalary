@@ -52,10 +52,11 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const idx = ['screen-guide','screen-worker','screen-salary','screen-costs'].indexOf(id);
+  const idx = ['screen-guide','screen-worker','screen-salary','screen-costs','screen-premium'].indexOf(id);
   document.querySelectorAll('.nav-tab')[idx].classList.add('active');
-  if (id === 'screen-salary') renderMonthsList();
-  if (id === 'screen-costs') { populateRatesForm(); renderCostsScreen(); }
+  if (id === 'screen-salary')  renderMonthsList();
+  if (id === 'screen-costs')   { populateRatesForm(); renderCostsScreen(); }
+  if (id === 'screen-premium') renderPremiumScreen();
 }
 
 function showPhase(phase) {
@@ -668,6 +669,97 @@ document.addEventListener('input', e => {
     renderModalEmployerCosts();
   }
 });
+
+// ─────────────── PREMIUM SCREEN ───────────────
+const FEATURES = [
+  { label: 'ניהול עובדת אחת',          free: true,  pro: true  },
+  { label: 'לוח שנה + חגים אוטומטיים', free: true,  pro: true  },
+  { label: 'דוח PDF חודשי',            free: true,  pro: true  },
+  { label: 'מדריך העסקה מלא',          free: true,  pro: true  },
+  { label: 'היסטוריה ללא הגבלה',       free: false, pro: true  },
+  { label: 'סנכרון ענן אוטומטי',       free: false, pro: true  },
+  { label: 'תזכורות ויזה + ב"ל',       free: false, pro: true  },
+  { label: 'ייצוא Excel לרואה חשבון',  free: false, pro: true  },
+  { label: 'עובדות מרובות',            free: false, pro: true  },
+  { label: 'דוח PDF עם לוגו משפחתי',   free: false, pro: true  },
+  { label: 'גיבוי אוטומטי יומי',       free: false, pro: true  },
+];
+
+function renderPremiumScreen() {
+  // Feature table
+  const tbody = document.getElementById('feature-table-body');
+  if (tbody) {
+    tbody.innerHTML = FEATURES.map(f => `
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:9px 8px;font-size:13px;">${f.label}</td>
+        <td style="padding:9px 16px;text-align:center;font-size:16px;">${f.free ? '✓' : '<span style="color:var(--text3);">—</span>'}</td>
+        <td style="padding:9px 16px;text-align:center;font-size:16px;background:rgba(91,127,255,0.05);">${f.pro ? '<span style="color:var(--success);">✓</span>' : '—'}</td>
+      </tr>`).join('');
+  }
+  // Signup count from localStorage
+  const count = parseInt(localStorage.getItem('signup_count') || '0');
+  const el = document.getElementById('signup-count-display');
+  if (el) el.innerHTML = `הצטרפו כבר <strong style="color:var(--accent);">${count}</strong> משפחות לרשימת המתנה`;
+}
+
+function openSignup(plan) {
+  const card = document.getElementById('signup-card');
+  if (!card) return;
+  card.style.display = 'block';
+  setV('signup-plan', plan);
+  card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function submitSignup() {
+  const name  = v('signup-name').trim();
+  const email = v('signup-email').trim();
+  if (!name || !email) { toast('נא למלא שם ואימייל'); return; }
+  if (!email.includes('@')) { toast('כתובת אימייל לא תקינה'); return; }
+
+  // Save locally
+  const signups = JSON.parse(localStorage.getItem('signups') || '[]');
+  signups.push({
+    name, email,
+    phone:    v('signup-phone'),
+    plan:     v('signup-plan'),
+    feedback: v('signup-feedback'),
+    date:     new Date().toISOString()
+  });
+  localStorage.setItem('signups', JSON.stringify(signups));
+  localStorage.setItem('signup_count', signups.length);
+
+  // Try sync to Gist
+  syncSignupsToGist(signups);
+
+  // UI feedback
+  document.getElementById('signup-msg').style.display = 'inline';
+  setV('signup-name', ''); setV('signup-email', '');
+  setV('signup-phone', ''); setV('signup-feedback', '');
+  renderPremiumScreen();
+  toast('✓ נרשמת בהצלחה!');
+}
+
+async function syncSignupsToGist(signups) {
+  const token = localStorage.getItem('gh_token');
+  if (!token) return;
+  const gistId = localStorage.getItem('gh_signups_gist_id');
+  const body = {
+    description: 'שכרון – רשימת הרשמות פרימיום',
+    public: false,
+    files: { 'shakaron_signups.json': { content: JSON.stringify(signups, null, 2) } }
+  };
+  try {
+    let url = 'https://api.github.com/gists', method = 'POST';
+    if (gistId) { url += '/' + gistId; method = 'PATCH'; }
+    const res = await fetch(url, {
+      method,
+      headers: { Authorization: 'token ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+    if (data.id) localStorage.setItem('gh_signups_gist_id', data.id);
+  } catch(e) { console.log('Gist sync failed silently'); }
+}
 
 // ─────────────── EMPLOYER COSTS ───────────────
 

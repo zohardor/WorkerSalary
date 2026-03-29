@@ -351,7 +351,7 @@ function updateSummary() {
 }
 
 // ─────────────── PDF GENERATION ───────────────
-async function generatePDF() {
+function generatePDF() {
   const key = v('m-month') || document.getElementById('editing-month-key').value;
   if (!key) { toast('בחר חודש תחילה'); return; }
 
@@ -366,124 +366,164 @@ async function generatePDF() {
   const nSab = calState.workedShabbats.size;
   const nHol = calState.workedHolidays.size;
   const base = parseFloat(v('m-base')) || 0;
-  const exp = parseFloat(v('m-expenses')) || 0;
+  const exp  = parseFloat(v('m-expenses')) || 0;
   const sabBonus = parseFloat(w.shabbatBonus) || 0;
   const holBonus = parseFloat(w.holidayBonus) || 0;
   const total = base + nSab * sabBonus + nHol * holBonus + exp;
 
-  // הוצאות מעסיק
-  const ec = calcEmployerCosts(base);
-  const r  = appData.rates || {};
-  const employerRows = [
-    r.bituach      ? `<div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:#555;">ביטוח לאומי מעסיק (${r.bituach}%)</span><span>₪${ec.bituach.toFixed(2)}</span></div>` : '',
-    r.pension      ? `<div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:#555;">פנסיה/קה״ש מעסיק (${r.pension}%)</span><span>₪${ec.pension.toFixed(2)}</span></div>` : '',
-    ec.havraMonthly ? `<div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:#555;">הבראה (${r.havraDays} ימים × ₪${r.havraRate} ÷ 12)</span><span>₪${ec.havraMonthly.toFixed(2)}</span></div>` : '',
-  ].filter(Boolean).join('');
-  const employerBlock = ec.total > 0 ? `
-    <div style="background:#fffbeb;border-radius:10px;padding:16px;border:1px solid #fde68a;margin-bottom:16px;">
-      <div style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:8px;">💼 הוצאות מעסיק</div>
-      ${employerRows}
-      <div style="border-top:1px solid #fde68a;margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font-weight:700;color:#b45309;">
-        <span>סה״כ הוצאות מעסיק:</span><span>₪${ec.total.toFixed(2)}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-weight:900;color:#dc2626;margin-top:4px;font-size:14px;">
-        <span>עלות כוללת למעסיק:</span><span>₪${(total + ec.total).toFixed(2)}</span>
-      </div>
-    </div>` : '';
-
-  // Build calendar HTML for PDF
-  let calHtml = '';
+  // לוח שנה
   const dayNames = ['א','ב','ג','ד','ה','ו','ש'];
-  calHtml += dayNames.map(d => `<div style="text-align:center;font-weight:700;font-size:11px;color:#666;padding:4px;">${d}</div>`).join('');
-  for (let i = 0; i < firstDay; i++) calHtml += '<div></div>';
+  let calCells = dayNames.map(d =>
+    `<div class="cal-head">${d}</div>`).join('');
+  for (let i = 0; i < firstDay; i++) calCells += '<div></div>';
   for (let d = 1; d <= daysInMonth; d++) {
-    const dateStr = yr + '-' + String(mo).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-    const isSat = isShabbat(dateStr);
-    const holInfo = getHolidayInfo(dateStr, nationalities);
-    const wSab = calState.workedShabbats.has(dateStr);
-    const wHol = calState.workedHolidays.has(dateStr);
-
-    let bg = '#fff', color = '#333', border = '1px solid #e5e7eb', fw = '400';
-    if (wSab) { bg = '#fff3e0'; color = '#e65100'; border = '2px solid #f97316'; fw = '700'; }
-    else if (wHol) { bg = '#ede7f6'; color = '#5e35b1'; border = '2px solid #818cf8'; fw = '700'; }
-    else if (isSat) { color = '#f97316'; }
-    else if (holInfo) { color = '#818cf8'; }
-
-    calHtml += `<div style="text-align:center;padding:5px;background:${bg};color:${color};border:${border};border-radius:6px;font-weight:${fw};font-size:12px;min-height:30px;display:flex;align-items:center;justify-content:center;">${d}</div>`;
+    const ds = yr + '-' + String(mo).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const isSat  = isShabbat(ds);
+    const holInfo = getHolidayInfo(ds, nationalities);
+    const wSab   = calState.workedShabbats.has(ds);
+    const wHol   = calState.workedHolidays.has(ds);
+    let cls = 'day';
+    if      (wSab)   cls += ' wsab';
+    else if (wHol)   cls += ' whol';
+    else if (isSat)  cls += ' sat';
+    else if (holInfo) cls += ' hol';
+    const tip = holInfo ? holInfo.name : (isSat ? 'שבת' : '');
+    calCells += `<div class="${cls}" title="${tip}">${d}</div>`;
   }
 
-  const preview = document.getElementById('report-preview');
-  preview.style.display = 'block';
-  preview.innerHTML = `
-    <div style="font-family:'Heebo',sans-serif;direction:rtl;max-width:700px;margin:0 auto;padding:32px;color:#111;">
-      <div style="text-align:center;margin-bottom:24px;border-bottom:3px solid #5b7fff;padding-bottom:16px;">
-        <h1 style="font-size:26px;font-weight:900;color:#1a1f2e;margin-bottom:4px;">תלוש שכר – שכרון</h1>
-        <div style="font-size:16px;color:#5b7fff;font-weight:700;">${monthLabel}</div>
-      </div>
+  // שורות שכר
+  const payRows = [
+    `<tr><td>שכר בסיס</td><td>₪${base.toLocaleString()}</td></tr>`,
+    nSab ? `<tr class="shab"><td>תוספת שבת (${nSab} × ₪${sabBonus})</td><td>₪${(nSab*sabBonus).toLocaleString()}</td></tr>` : '',
+    nHol ? `<tr class="holr"><td>תוספת חג (${nHol} × ₪${holBonus})</td><td>₪${(nHol*holBonus).toLocaleString()}</td></tr>` : '',
+    exp  ? `<tr><td>החזר הוצאות</td><td>₪${exp.toLocaleString()}</td></tr>` : '',
+    `<tr class="total-row"><td><strong>סה״כ לתשלום</strong></td><td><strong>₪${total.toLocaleString()}</strong></td></tr>`,
+  ].filter(Boolean).join('');
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
-        <div style="background:#f8faff;border-radius:10px;padding:16px;border:1px solid #e5e7eb;">
-          <div style="font-size:12px;color:#888;margin-bottom:8px;font-weight:600;">פרטי עובדת</div>
-          <div style="font-size:15px;font-weight:700;">${w.name || '—'}</div>
-          <div style="font-size:13px;color:#555;margin-top:4px;">דרכון: ${w.passport || '—'}</div>
-          <div style="font-size:13px;color:#555;">תאריך התחלה: ${w.startDate || '—'}</div>
-        </div>
-        <div style="background:#f8faff;border-radius:10px;padding:16px;border:1px solid #e5e7eb;">
-          <div style="font-size:12px;color:#888;margin-bottom:8px;font-weight:600;">פרטי תשלום</div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:#555;">שכר בסיס:</span><span style="font-weight:600;">₪${Number(base).toLocaleString()}</span></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:#f97316;">תוספת שבת (${nSab} × ₪${sabBonus}):</span><span style="font-weight:600;color:#f97316;">₪${Number(nSab*sabBonus).toLocaleString()}</span></div>
-          <div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:#818cf8;">תוספת חג (${nHol} × ₪${holBonus}):</span><span style="font-weight:600;color:#818cf8;">₪${Number(nHol*holBonus).toLocaleString()}</span></div>
-          ${exp ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span style="color:#555;">החזר הוצאות:</span><span style="font-weight:600;">₪${Number(exp).toLocaleString()}</span></div>` : ''}
-          <div style="border-top:2px solid #5b7fff;margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;"><span style="font-weight:700;">סה״כ לתשלום:</span><span style="font-size:18px;font-weight:900;color:#5b7fff;">₪${Number(total).toLocaleString()}</span></div>
-        </div>
-      </div>
+  const holUsed = calcHolUsed();
+  const vacUsed = calcTotalVacUsed();
 
-      <div style="margin-bottom:20px;">
-        <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:#1a1f2e;">לוח שנה – ${monthLabel}</div>
-        <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;">
-          ${calHtml}
-        </div>
-        <div style="display:flex;gap:20px;margin-top:10px;flex-wrap:wrap;">
-          <span style="font-size:11px;display:flex;align-items:center;gap:5px;"><span style="background:#fff3e0;border:2px solid #f97316;border-radius:3px;width:14px;height:14px;display:inline-block;"></span> שבת עבדה</span>
-          <span style="font-size:11px;display:flex;align-items:center;gap:5px;"><span style="background:#ede7f6;border:2px solid #818cf8;border-radius:3px;width:14px;height:14px;display:inline-block;"></span> חג עבד/ה</span>
-          <span style="font-size:11px;display:flex;align-items:center;gap:5px;"><span style="color:#f97316;font-weight:700;">ש</span> שבת (לא עבדה)</span>
-        </div>
-      </div>
+  const html = `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>תלוש שכר – ${w.name||'עובדת'} – ${monthLabel}</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;900&display=swap" rel="stylesheet"/>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Heebo',sans-serif;direction:rtl;background:#fff;color:#111;
+       padding:20px;font-size:13px;max-width:680px;margin:0 auto}
+  h1{font-size:22px;font-weight:900;color:#1a1f2e;margin-bottom:2px}
+  .sub{color:#5b7fff;font-size:15px;font-weight:700;margin-bottom:16px}
+  .top-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+  .box{background:#f7f9ff;border:1px solid #dde3f5;border-radius:8px;padding:12px}
+  .box-title{font-size:11px;color:#888;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+  .box p{font-size:13px;color:#444;line-height:1.6}
+  .box .name{font-size:15px;font-weight:700;color:#111;margin-bottom:4px}
+  table.pay{width:100%;border-collapse:collapse;margin-bottom:16px}
+  table.pay td{padding:6px 8px;border-bottom:1px solid #eee}
+  table.pay td:last-child{text-align:left;font-weight:600}
+  tr.shab td{color:#e65100}
+  tr.holr td{color:#5e35b1}
+  tr.total-row td{border-top:2px solid #5b7fff;padding-top:8px;font-size:15px;color:#5b7fff}
+  .cal-wrap{margin-bottom:14px}
+  .cal-title{font-size:13px;font-weight:700;margin-bottom:8px;color:#1a1f2e}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
+  .cal-head{text-align:center;font-size:10px;font-weight:700;color:#888;padding:3px}
+  .day{text-align:center;padding:4px 2px;border-radius:4px;font-size:12px;
+       border:1px solid #eee;min-height:26px;line-height:18px}
+  .wsab{background:#fff3e0;color:#e65100;border-color:#f97316;font-weight:700}
+  .whol{background:#ede7f6;color:#5e35b1;border-color:#818cf8;font-weight:700}
+  .sat{color:#f97316;border-color:#ffe0cc}
+  .hol{color:#818cf8;border-color:#e0e0ff}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10px;color:#555;margin-top:6px}
+  .legend span{display:flex;align-items:center;gap:4px}
+  .swatch{width:12px;height:12px;border-radius:2px;display:inline-block}
+  .vac-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+  .vac-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px}
+  .vac-box.hol-box{background:#f5f3ff;border-color:#ddd6fe}
+  .vac-box .vb-title{font-size:10px;color:#888;font-weight:700;margin-bottom:5px}
+  .vac-box .vb-nums{font-size:12px;color:#333}
+  .vac-box .vb-nums strong{color:#059669}
+  .vac-box.hol-box .vb-nums strong{color:#7c3aed}
+  .footer{text-align:center;font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:10px;margin-top:4px}
+  @media print{
+    body{padding:10px}
+    @page{size:A4 portrait;margin:10mm}
+  }
+  .print-btn{display:block;margin:0 auto 16px;padding:10px 28px;background:#5b7fff;
+             color:#fff;border:none;border-radius:8px;font-size:15px;font-family:'Heebo',sans-serif;
+             font-weight:700;cursor:pointer}
+  @media print{.print-btn{display:none}}
+</style>
+</head>
+<body>
+<button class="print-btn" onclick="window.print()">🖨️ הדפס / שמור PDF</button>
+<h1>תלוש שכר – שכרון ✦</h1>
+<div class="sub">${monthLabel}</div>
 
-      <div style="background:#f8faff;border-radius:10px;padding:14px;border:1px solid #e5e7eb;margin-bottom:16px;">
-        <div style="font-size:12px;color:#888;font-weight:600;margin-bottom:6px;">ניצול ימי חג ✦ חופשה</div>
-        <div style="display:flex;gap:24px;flex-wrap:wrap;">
-          <span>חג – זכאות: <strong>${w.holTotal||0}</strong> | נוצל: <strong>${calcHolUsed()}</strong> | נותר: <strong>${Math.max(0,(w.holTotal||0)-calcHolUsed())}</strong></span>
-          <span>חופשה – זכאות: <strong>${w.vacTotal||0}</strong> | נוצל: <strong>${calcTotalVacUsed()}</strong> | נותר: <strong>${Math.max(0,(w.vacTotal||0)-calcTotalVacUsed())}</strong></span>
-        </div>
-      </div>
+<div class="top-grid">
+  <div class="box">
+    <div class="box-title">פרטי עובדת</div>
+    <div class="name">${w.name||'—'}</div>
+    <p>דרכון: ${w.passport||'—'}<br>
+    התחלה: ${w.startDate||'—'}<br>
+    ויזה עד: ${w.visaDate||'—'}</p>
+  </div>
+  <div class="box">
+    <div class="box-title">פרטי תשלום</div>
+    <table class="pay" style="margin-bottom:0">${payRows}</table>
+  </div>
+</div>
 
-      ${employerBlock}
+<div class="cal-wrap">
+  <div class="cal-title">📅 לוח שנה – ${monthLabel}</div>
+  <div class="cal">${calCells}</div>
+  <div class="legend">
+    <span><span class="swatch wsab"></span>שבת שעבדה</span>
+    <span><span class="swatch whol"></span>חג שעבדה</span>
+    <span style="color:#f97316">◆ שבת רגילה</span>
+    <span style="color:#818cf8">◆ חג (לא עבדה)</span>
+  </div>
+</div>
 
-      <div style="text-align:center;font-size:11px;color:#aaa;border-top:1px solid #e5e7eb;padding-top:12px;">
-        הופק ע"י שכרון • ${new Date().toLocaleDateString('he-IL')}
-      </div>
+<div class="vac-row">
+  <div class="vac-box hol-box">
+    <div class="vb-title">🎉 ימי חג</div>
+    <div class="vb-nums">
+      זכאות: <strong>${w.holTotal||0}</strong> &nbsp;|&nbsp;
+      נוצל: <strong>${holUsed}</strong> &nbsp;|&nbsp;
+      נותר: <strong>${Math.max(0,(w.holTotal||0)-holUsed)}</strong>
     </div>
-  `;
+  </div>
+  <div class="vac-box">
+    <div class="vb-title">🏖️ ימי חופשה</div>
+    <div class="vb-nums">
+      זכאות: <strong>${w.vacTotal||0}</strong> &nbsp;|&nbsp;
+      נוצל: <strong>${vacUsed}</strong> &nbsp;|&nbsp;
+      נותר: <strong>${Math.max(0,(w.vacTotal||0)-vacUsed)}</strong>
+    </div>
+  </div>
+</div>
 
-  // Use html2canvas + jsPDF
-  try {
-    const canvas = await html2canvas(preview, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
-    const imgW = 210;
-    const imgH = (canvas.height * imgW) / canvas.width;
-    pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, 0, imgW, imgH);
-    pdf.save(`שכרון_${w.name||'עובדת'}_${key}.pdf`);
-    toast('הדוח הורד ✓');
-  } catch(e) {
-    toast('שגיאה ביצירת PDF');
-    console.error(e);
-  } finally {
-    preview.style.display = 'none';
-    preview.innerHTML = '';
+<div class="footer">הופק ע"י שכרון ✦ &nbsp;•&nbsp; ${new Date().toLocaleDateString('he-IL')}</div>
+<script>window.onload=()=>{/* ready */}<\/script>
+</body></html>`;
+
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank');
+  if (!win) {
+    // fallback: download as HTML file
+    const a = document.createElement('a');
+    a.href = url; a.download = `שכרון_${w.name||'עובדת'}_${key}.html`;
+    a.click();
   }
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  toast('הדוח נפתח – לחץ "הדפס / שמור PDF"');
 }
+
 
 // ─────────────── FILE HANDLING ───────────────
 function handleFile(category, input) {
@@ -705,7 +745,7 @@ function renderCostsScreen() {
     return;
   }
 
-  let totalSalary = 0, totalEmployer = 0;
+  let cumSalary = 0, cumBituach = 0, cumPension = 0, cumHavra = 0, cumEmployer = 0;
   const r = appData.rates || {};
 
   const rows = months.map(([key, m]) => {
@@ -713,21 +753,41 @@ function renderCostsScreen() {
     const label = HEB_MONTHS[parseInt(mo)-1] + ' ' + yr;
     const gross = parseFloat(m.base) || 0;
     const c = calcEmployerCosts(gross);
-    totalSalary   += gross;
-    totalEmployer += c.total;
+    cumSalary   += gross;
+    cumBituach  += c.bituach;
+    cumPension  += c.pension;
+    cumHavra    += c.havraMonthly;
+    cumEmployer += c.total;
+    const monthTotal = gross + c.total;
+
     return `
       <tr style="border-bottom:1px solid var(--border);">
-        <td style="padding:10px 8px;font-weight:600;">${label}</td>
-        <td style="padding:10px 8px;text-align:left;">₪${gross.toLocaleString()}</td>
-        <td style="padding:10px 8px;text-align:left;color:var(--text2);">${r.bituach ? '₪'+c.bituach.toFixed(0) : '—'}</td>
-        <td style="padding:10px 8px;text-align:left;color:var(--text2);">${r.pension  ? '₪'+c.pension.toFixed(0)  : '—'}</td>
-        <td style="padding:10px 8px;text-align:left;color:var(--text2);">${r.havraDays ? '₪'+c.havraMonthly.toFixed(0) : '—'}</td>
-        <td style="padding:10px 8px;text-align:left;color:var(--warn);font-weight:600;">₪${c.total.toFixed(0)}</td>
-        <td style="padding:10px 8px;text-align:left;color:var(--danger);font-weight:700;">₪${(gross+c.total).toFixed(0)}</td>
+        <td style="padding:10px 8px;font-weight:600;white-space:nowrap;">${label}</td>
+        <td style="padding:10px 8px;text-align:left;font-weight:600;">₪${gross.toLocaleString()}</td>
+        <td style="padding:10px 8px;text-align:left;">
+          <div style="font-weight:600;color:var(--text);">₪${c.bituach.toFixed(0)}</div>
+          ${r.bituach ? `<div style="font-size:11px;color:var(--text3);">${r.bituach}%</div>` : ''}
+        </td>
+        <td style="padding:10px 8px;text-align:left;">
+          <div style="font-weight:600;color:var(--text);">₪${c.pension.toFixed(0)}</div>
+          ${r.pension ? `<div style="font-size:11px;color:var(--text3);">${r.pension}%</div>` : ''}
+        </td>
+        <td style="padding:10px 8px;text-align:left;">
+          <div style="font-weight:600;color:var(--text);">₪${c.havraMonthly.toFixed(0)}</div>
+          ${r.havraDays ? `<div style="font-size:11px;color:var(--text3);">${r.havraDays}י×₪${r.havraRate}÷12</div>` : ''}
+        </td>
+        <td style="padding:10px 8px;text-align:left;">
+          <div style="font-weight:700;color:var(--warn);">₪${c.total.toFixed(0)}</div>
+          <div style="font-size:11px;color:var(--text3);">מצטבר: ₪${cumEmployer.toFixed(0)}</div>
+        </td>
+        <td style="padding:10px 8px;text-align:left;">
+          <div style="font-weight:700;color:var(--danger);">₪${monthTotal.toFixed(0)}</div>
+          <div style="font-size:11px;color:var(--text3);">מצטבר: ₪${(cumSalary+cumEmployer).toFixed(0)}</div>
+        </td>
       </tr>`;
   }).join('');
 
-  const totalAll = totalSalary + totalEmployer;
+  const totalAll = cumSalary + cumEmployer;
 
   document.getElementById('costs-table-container').innerHTML = `
     <div style="overflow-x:auto;">
@@ -736,28 +796,30 @@ function renderCostsScreen() {
         <tr style="border-bottom:2px solid var(--border);color:var(--text2);">
           <th style="padding:8px;text-align:right;font-weight:600;">חודש</th>
           <th style="padding:8px;text-align:left;font-weight:600;">שכר ברוטו</th>
-          <th style="padding:8px;text-align:left;font-weight:600;">${r.bituach ? `ב״ל (${r.bituach}%)` : 'ב״ל'}</th>
-          <th style="padding:8px;text-align:left;font-weight:600;">${r.pension  ? `פנסיה (${r.pension}%)` : 'פנסיה'}</th>
-          <th style="padding:8px;text-align:left;font-weight:600;">${r.havraDays ? `הבראה (${r.havraDays}י×₪${r.havraRate}÷12)` : 'הבראה'}</th>
+          <th style="padding:8px;text-align:left;font-weight:600;">ביטוח לאומי</th>
+          <th style="padding:8px;text-align:left;font-weight:600;">פנסיה</th>
+          <th style="padding:8px;text-align:left;font-weight:600;">הבראה</th>
           <th style="padding:8px;text-align:left;font-weight:600;color:var(--warn);">הוצ׳ מעסיק</th>
           <th style="padding:8px;text-align:left;font-weight:600;color:var(--danger);">עלות כוללת</th>
         </tr>
       </thead>
       <tbody>
         ${rows}
-        <tr style="border-top:2px solid var(--border);font-weight:700;background:var(--surface2);">
-          <td style="padding:10px 8px;">סה״כ</td>
-          <td style="padding:10px 8px;text-align:left;">₪${totalSalary.toLocaleString()}</td>
-          <td colspan="3"></td>
-          <td style="padding:10px 8px;text-align:left;color:var(--warn);">₪${totalEmployer.toLocaleString()}</td>
-          <td style="padding:10px 8px;text-align:left;color:var(--danger);">₪${totalAll.toLocaleString()}</td>
+        <tr style="border-top:2px solid var(--border);background:var(--surface2);">
+          <td style="padding:12px 8px;font-weight:700;">סה״כ מצטבר</td>
+          <td style="padding:12px 8px;text-align:left;font-weight:700;">₪${cumSalary.toLocaleString()}</td>
+          <td style="padding:12px 8px;text-align:left;font-weight:700;">₪${cumBituach.toFixed(0)}</td>
+          <td style="padding:12px 8px;text-align:left;font-weight:700;">₪${cumPension.toFixed(0)}</td>
+          <td style="padding:12px 8px;text-align:left;font-weight:700;">₪${cumHavra.toFixed(0)}</td>
+          <td style="padding:12px 8px;text-align:left;font-weight:700;color:var(--warn);">₪${cumEmployer.toFixed(0)}</td>
+          <td style="padding:12px 8px;text-align:left;font-weight:700;color:var(--danger);">₪${totalAll.toFixed(0)}</td>
         </tr>
       </tbody>
     </table>
     </div>`;
 
-  setText('cs-total-salary',   '₪' + totalSalary.toLocaleString());
-  setText('cs-total-employer', '₪' + totalEmployer.toLocaleString());
+  setText('cs-total-salary',   '₪' + cumSalary.toLocaleString());
+  setText('cs-total-employer', '₪' + cumEmployer.toLocaleString());
   setText('cs-total-all',      '₪' + totalAll.toLocaleString());
   setText('cs-months-count',   months.length);
 }

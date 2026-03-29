@@ -4,7 +4,8 @@
 let appData = {
   worker: {},
   months: {},   // key: "YYYY-MM"
-  files: {}     // key: category -> [{name, dataUrl}]
+  files: {},    // key: category -> [{name, dataUrl}]
+  rates: {}     // employer cost rates
 };
 
 let calState = {
@@ -29,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ─────────────── LOCAL STORAGE ───────────────
 function saveLocal() {
   try {
-    const toSave = { worker: appData.worker, months: appData.months };
+    const toSave = { worker: appData.worker, months: appData.months, rates: appData.rates };
     localStorage.setItem('shakaron_data', JSON.stringify(toSave));
   } catch(e) {}
 }
@@ -41,6 +42,7 @@ function loadLocal() {
       const parsed = JSON.parse(raw);
       appData.worker = parsed.worker || {};
       appData.months = parsed.months || {};
+      appData.rates  = parsed.rates  || {};
     }
   } catch(e) {}
 }
@@ -50,9 +52,10 @@ function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const idx = id === 'screen-worker' ? 0 : 1;
+  const idx = id === 'screen-worker' ? 0 : id === 'screen-salary' ? 1 : 2;
   document.querySelectorAll('.nav-tab')[idx].classList.add('active');
   if (id === 'screen-salary') renderMonthsList();
+  if (id === 'screen-costs') { populateRatesForm(); renderCostsScreen(); }
 }
 
 // ─────────────── WORKER FORM ───────────────
@@ -68,8 +71,8 @@ function saveWorker() {
     shabbatBonus: parseFloat(v('w-shabbat-bonus')) || 0,
     holidayBonus: parseFloat(v('w-holiday-bonus')) || 0,
     vacTotal: parseInt(v('w-vac-total')) || 0,
+    holTotal: parseInt(v('w-hol-total')) || 0,
     sickTotal: parseInt(v('w-sick-total')) || 0,
-    vacUsed: parseInt(v('w-vac-used')) || 0,
   };
   saveLocal();
   updateWorkerStats();
@@ -89,28 +92,68 @@ function populateWorkerForm() {
   setV('w-shabbat-bonus', w.shabbatBonus);
   setV('w-holiday-bonus', w.holidayBonus);
   setV('w-vac-total', w.vacTotal);
+  setV('w-hol-total', w.holTotal);
   setV('w-sick-total', w.sickTotal);
-  setV('w-vac-used', w.vacUsed);
+}
+
+// ימי חג שנוצלו = חגים שעבדה בהם (מחושב אוטומטית)
+function calcHolUsed() {
+  let total = 0;
+  for (const [, m] of Object.entries(appData.months)) {
+    total += (m.holidays || []).length;
+  }
+  return total;
+}
+
+// ימי חופשה שנוצלו = ימים ידניים שהוזנו בכל חודש
+function calcTotalVacUsed() {
+  let total = 0;
+  for (const [, m] of Object.entries(appData.months)) {
+    total += parseInt(m.vacDays) || 0;
+  }
+  return total;
 }
 
 function updateWorkerStats() {
   const w = appData.worker;
   setText('stat-name', w.name || '—');
   setText('stat-base', w.baseSalary ? '₪' + Number(w.baseSalary).toLocaleString() : '₪0');
-  const left = (w.vacTotal || 0) - (w.vacUsed || 0);
-  setText('stat-vac-left', Math.max(0, left));
-  setText('stat-vac-used', w.vacUsed || 0);
-  setText('vac-total-disp', w.vacTotal || 0);
-  setText('vac-used-disp', w.vacUsed || 0);
-  setText('vac-left-disp', Math.max(0, left));
+
+  // ימי חג
+  const holUsed = calcHolUsed();
+  const holTotal = w.holTotal || 0;
+  const holLeft = Math.max(0, holTotal - holUsed);
+  setText('stat-hol-left', holLeft);
+  setText('stat-hol-used', holUsed);
+  setText('stat-hol-total', holTotal);
+  setText('hol-total-disp', holTotal);
+  setText('hol-used-disp', holUsed);
+  setText('hol-left-disp', holLeft);
+
+  // ימי חופשה
+  const vacUsed = calcTotalVacUsed();
+  const vacTotal = w.vacTotal || 0;
+  const vacLeft = Math.max(0, vacTotal - vacUsed);
+  setText('stat-vac-left', vacLeft);
+  setText('stat-vac-used', vacUsed);
+  setText('stat-vac-total-top', vacTotal);
+  setText('vac-total-disp', vacTotal);
+  setText('vac-used-disp', vacUsed);
+  setText('vac-left-disp', vacLeft);
 }
 
 function updateVacBar() {
   const w = appData.worker;
-  const total = w.vacTotal || 0;
-  const used = w.vacUsed || 0;
-  const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
-  document.getElementById('vac-bar').style.width = pct + '%';
+
+  const holUsed = calcHolUsed();
+  const holTotal = w.holTotal || 0;
+  const holPct = holTotal > 0 ? Math.min(100, (holUsed / holTotal) * 100) : 0;
+  document.getElementById('hol-bar').style.width = holPct + '%';
+
+  const vacUsed = calcTotalVacUsed();
+  const vacTotal = w.vacTotal || 0;
+  const vacPct = vacTotal > 0 ? Math.min(100, (vacUsed / vacTotal) * 100) : 0;
+  document.getElementById('vac-bar').style.width = vacPct + '%';
 }
 
 // ─────────────── MONTHS LIST ───────────────
@@ -133,6 +176,7 @@ function renderMonthsList() {
           <span class="me-chip shab">🕯️ ${m.shabbats?.length||0} שבתות</span>
           <span class="me-chip hol">🎉 ${m.holidays?.length||0} חגים</span>
           ${m.expenses ? `<span class="me-chip">החזר: ₪${Number(m.expenses).toLocaleString()}</span>` : ''}
+          ${m.vacDays ? `<span class="me-chip" style="background:rgba(52,211,153,0.15);color:var(--success);">🏖️ ${m.vacDays} ימי חופשה</span>` : ''}
           ${m.notes ? `<span class="me-chip">📝 ${m.notes}</span>` : ''}
         </div>
         <div class="me-total">₪${Number(total).toLocaleString()}</div>
@@ -163,6 +207,7 @@ function openMonthModal(key = null, pdfOnly = false) {
     setV('m-month', key);
     setV('m-base', m.base);
     setV('m-expenses', m.expenses || 0);
+    setV('m-vac-days', m.vacDays || 0);
     setV('m-notes', m.notes || '');
     const [yr, mo] = key.split('-').map(Number);
     calState.year = yr;
@@ -182,10 +227,12 @@ function openMonthModal(key = null, pdfOnly = false) {
     setV('m-month', monthStr);
     setV('m-base', appData.worker.baseSalary || '');
     setV('m-expenses', 0);
+    setV('m-vac-days', 0);
     setV('m-notes', '');
   }
   renderCalendar();
   updateSummary();
+  renderModalEmployerCosts();
 }
 
 function closeModal() {
@@ -198,12 +245,15 @@ function saveMonth() {
   appData.months[key] = {
     base: parseFloat(v('m-base')) || 0,
     expenses: parseFloat(v('m-expenses')) || 0,
+    vacDays: parseInt(v('m-vac-days')) || 0,
     notes: v('m-notes'),
     shabbats: [...calState.workedShabbats],
     holidays: [...calState.workedHolidays]
   };
   saveLocal();
   renderMonthsList();
+  updateWorkerStats();
+  updateVacBar();
   closeModal();
   toast('החודש נשמר ✓');
 }
@@ -321,6 +371,26 @@ async function generatePDF() {
   const holBonus = parseFloat(w.holidayBonus) || 0;
   const total = base + nSab * sabBonus + nHol * holBonus + exp;
 
+  // הוצאות מעסיק
+  const ec = calcEmployerCosts(base);
+  const r  = appData.rates || {};
+  const employerRows = [
+    r.bituach      ? `<div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:#555;">ביטוח לאומי מעסיק (${r.bituach}%)</span><span>₪${ec.bituach.toFixed(2)}</span></div>` : '',
+    r.pension      ? `<div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:#555;">פנסיה/קה״ש מעסיק (${r.pension}%)</span><span>₪${ec.pension.toFixed(2)}</span></div>` : '',
+    ec.havraMonthly ? `<div style="display:flex;justify-content:space-between;margin-bottom:3px;"><span style="color:#555;">הבראה (${r.havraDays} ימים × ₪${r.havraRate} ÷ 12)</span><span>₪${ec.havraMonthly.toFixed(2)}</span></div>` : '',
+  ].filter(Boolean).join('');
+  const employerBlock = ec.total > 0 ? `
+    <div style="background:#fffbeb;border-radius:10px;padding:16px;border:1px solid #fde68a;margin-bottom:16px;">
+      <div style="font-size:12px;color:#92400e;font-weight:700;margin-bottom:8px;">💼 הוצאות מעסיק</div>
+      ${employerRows}
+      <div style="border-top:1px solid #fde68a;margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font-weight:700;color:#b45309;">
+        <span>סה״כ הוצאות מעסיק:</span><span>₪${ec.total.toFixed(2)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-weight:900;color:#dc2626;margin-top:4px;font-size:14px;">
+        <span>עלות כוללת למעסיק:</span><span>₪${(total + ec.total).toFixed(2)}</span>
+      </div>
+    </div>` : '';
+
   // Build calendar HTML for PDF
   let calHtml = '';
   const dayNames = ['א','ב','ג','ד','ה','ו','ש'];
@@ -381,13 +451,14 @@ async function generatePDF() {
       </div>
 
       <div style="background:#f8faff;border-radius:10px;padding:14px;border:1px solid #e5e7eb;margin-bottom:16px;">
-        <div style="font-size:12px;color:#888;font-weight:600;margin-bottom:6px;">ניצול חופשה</div>
-        <div style="display:flex;gap:24px;">
-          <span>זכאות: <strong>${w.vacTotal||0}</strong> ימים</span>
-          <span>נוצל: <strong>${w.vacUsed||0}</strong> ימים</span>
-          <span>נותר: <strong>${Math.max(0,(w.vacTotal||0)-(w.vacUsed||0))}</strong> ימים</span>
+        <div style="font-size:12px;color:#888;font-weight:600;margin-bottom:6px;">ניצול ימי חג ✦ חופשה</div>
+        <div style="display:flex;gap:24px;flex-wrap:wrap;">
+          <span>חג – זכאות: <strong>${w.holTotal||0}</strong> | נוצל: <strong>${calcHolUsed()}</strong> | נותר: <strong>${Math.max(0,(w.holTotal||0)-calcHolUsed())}</strong></span>
+          <span>חופשה – זכאות: <strong>${w.vacTotal||0}</strong> | נוצל: <strong>${calcTotalVacUsed()}</strong> | נותר: <strong>${Math.max(0,(w.vacTotal||0)-calcTotalVacUsed())}</strong></span>
         </div>
       </div>
+
+      ${employerBlock}
 
       <div style="text-align:center;font-size:11px;color:#aaa;border-top:1px solid #e5e7eb;padding-top:12px;">
         הופק ע"י שכרון • ${new Date().toLocaleDateString('he-IL')}
@@ -544,5 +615,149 @@ function toast(msg) {
 
 // Update summary on base/expense change
 document.addEventListener('input', e => {
-  if (['m-base','m-expenses'].includes(e.target.id)) updateSummary();
+  if (['m-base','m-expenses'].includes(e.target.id)) {
+    updateSummary();
+    renderModalEmployerCosts();
+  }
 });
+
+// ─────────────── EMPLOYER COSTS ───────────────
+
+function saveRates() {
+  const havraDays = parseFloat(v('r-havra-days')) || 0;
+  const havraRate = parseFloat(v('r-havra-rate')) || 0;
+  const havraAnnual = havraDays * havraRate;
+  const havraMonthly = havraAnnual / 12;
+
+  appData.rates = {
+    bituach:     parseFloat(v('r-bituach')) || 0,
+    pension:     parseFloat(v('r-pension')) || 0,
+    havraDays,
+    havraRate,
+    havraMonthly,
+    havraAnnual,
+  };
+  saveLocal();
+
+  // עדכן תצוגת הבראה
+  setText('havra-annual-disp',  havraAnnual.toFixed(0));
+  setText('havra-monthly-disp', havraMonthly.toFixed(2));
+
+  renderCostsScreen();
+  renderModalEmployerCosts();
+}
+
+function populateRatesForm() {
+  const r = appData.rates || {};
+  setV('r-bituach',    r.bituach);
+  setV('r-pension',    r.pension);
+  setV('r-havra-days', r.havraDays);
+  setV('r-havra-rate', r.havraRate);
+
+  const annual  = (r.havraDays||0) * (r.havraRate||0);
+  const monthly = annual / 12;
+  setText('havra-annual-disp',  annual.toFixed(0));
+  setText('havra-monthly-disp', monthly.toFixed(2));
+}
+
+// חשב הוצאות מעסיק לחודש בודד לפי שכר ברוטו
+function calcEmployerCosts(grossSalary) {
+  const r = appData.rates || {};
+  const bituach     = (grossSalary * (r.bituach || 0)) / 100;
+  const pension     = (grossSalary * (r.pension  || 0)) / 100;
+  const havraMonthly = r.havraMonthly || 0;
+  const total       = bituach + pension + havraMonthly;
+  return { bituach, pension, havraMonthly, total };
+}
+
+// הצג הוצאות מעסיק בתוך מודל החודש
+function renderModalEmployerCosts() {
+  const el = document.getElementById('modal-employer-costs');
+  if (!el) return;
+  const base = parseFloat(v('m-base')) || 0;
+  if (!base) { el.innerHTML = '<span style="color:var(--text3)">הזן שכר בסיס כדי לחשב</span>'; return; }
+  const c = calcEmployerCosts(base);
+  const r = appData.rates || {};
+  const rows = [
+    r.bituach      ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>ביטוח לאומי מעסיק (${r.bituach}%)</span><span>₪${c.bituach.toFixed(2)}</span></div>` : '',
+    r.pension      ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>פנסיה/קה״ש מעסיק (${r.pension}%)</span><span>₪${c.pension.toFixed(2)}</span></div>` : '',
+    c.havraMonthly ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>הבראה (${r.havraDays} ימים × ₪${r.havraRate} ÷ 12)</span><span>₪${c.havraMonthly.toFixed(2)}</span></div>` : '',
+  ].filter(Boolean).join('');
+  el.innerHTML = rows
+    + `<div style="border-top:1px solid var(--border);margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font-weight:700;color:var(--warn);">
+         <span>סה״כ הוצאות מעסיק</span><span>₪${c.total.toFixed(2)}</span>
+       </div>
+       <div style="display:flex;justify-content:space-between;font-weight:700;color:var(--danger);margin-top:4px;">
+         <span>עלות כוללת (שכר + מעסיק)</span><span>₪${(base + c.total).toFixed(2)}</span>
+       </div>`;
+}
+
+// מסך הוצאות מעסיק – סיכומים וטבלה
+function renderCostsScreen() {
+  const months = Object.entries(appData.months).sort((a,b) => a[0].localeCompare(b[0]));
+  if (!months.length) {
+    document.getElementById('costs-table-container').innerHTML =
+      '<div style="color:var(--text3);text-align:center;padding:32px;">אין חודשים מוגדרים עדיין</div>';
+    setText('cs-total-salary',   '₪0');
+    setText('cs-total-employer', '₪0');
+    setText('cs-total-all',      '₪0');
+    setText('cs-months-count',   '0');
+    return;
+  }
+
+  let totalSalary = 0, totalEmployer = 0;
+  const r = appData.rates || {};
+
+  const rows = months.map(([key, m]) => {
+    const [yr, mo] = key.split('-');
+    const label = HEB_MONTHS[parseInt(mo)-1] + ' ' + yr;
+    const gross = parseFloat(m.base) || 0;
+    const c = calcEmployerCosts(gross);
+    totalSalary   += gross;
+    totalEmployer += c.total;
+    return `
+      <tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 8px;font-weight:600;">${label}</td>
+        <td style="padding:10px 8px;text-align:left;">₪${gross.toLocaleString()}</td>
+        <td style="padding:10px 8px;text-align:left;color:var(--text2);">${r.bituach ? '₪'+c.bituach.toFixed(0) : '—'}</td>
+        <td style="padding:10px 8px;text-align:left;color:var(--text2);">${r.pension  ? '₪'+c.pension.toFixed(0)  : '—'}</td>
+        <td style="padding:10px 8px;text-align:left;color:var(--text2);">${r.havraDays ? '₪'+c.havraMonthly.toFixed(0) : '—'}</td>
+        <td style="padding:10px 8px;text-align:left;color:var(--warn);font-weight:600;">₪${c.total.toFixed(0)}</td>
+        <td style="padding:10px 8px;text-align:left;color:var(--danger);font-weight:700;">₪${(gross+c.total).toFixed(0)}</td>
+      </tr>`;
+  }).join('');
+
+  const totalAll = totalSalary + totalEmployer;
+
+  document.getElementById('costs-table-container').innerHTML = `
+    <div style="overflow-x:auto;">
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead>
+        <tr style="border-bottom:2px solid var(--border);color:var(--text2);">
+          <th style="padding:8px;text-align:right;font-weight:600;">חודש</th>
+          <th style="padding:8px;text-align:left;font-weight:600;">שכר ברוטו</th>
+          <th style="padding:8px;text-align:left;font-weight:600;">${r.bituach ? `ב״ל (${r.bituach}%)` : 'ב״ל'}</th>
+          <th style="padding:8px;text-align:left;font-weight:600;">${r.pension  ? `פנסיה (${r.pension}%)` : 'פנסיה'}</th>
+          <th style="padding:8px;text-align:left;font-weight:600;">${r.havraDays ? `הבראה (${r.havraDays}י×₪${r.havraRate}÷12)` : 'הבראה'}</th>
+          <th style="padding:8px;text-align:left;font-weight:600;color:var(--warn);">הוצ׳ מעסיק</th>
+          <th style="padding:8px;text-align:left;font-weight:600;color:var(--danger);">עלות כוללת</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows}
+        <tr style="border-top:2px solid var(--border);font-weight:700;background:var(--surface2);">
+          <td style="padding:10px 8px;">סה״כ</td>
+          <td style="padding:10px 8px;text-align:left;">₪${totalSalary.toLocaleString()}</td>
+          <td colspan="3"></td>
+          <td style="padding:10px 8px;text-align:left;color:var(--warn);">₪${totalEmployer.toLocaleString()}</td>
+          <td style="padding:10px 8px;text-align:left;color:var(--danger);">₪${totalAll.toLocaleString()}</td>
+        </tr>
+      </tbody>
+    </table>
+    </div>`;
+
+  setText('cs-total-salary',   '₪' + totalSalary.toLocaleString());
+  setText('cs-total-employer', '₪' + totalEmployer.toLocaleString());
+  setText('cs-total-all',      '₪' + totalAll.toLocaleString());
+  setText('cs-months-count',   months.length);
+}

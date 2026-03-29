@@ -406,6 +406,7 @@
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showScreen('screen-worker')">👤 פרטי עובדת</button>
     <button class="nav-tab" onclick="showScreen('screen-salary')">📅 ניהול חודשי</button>
+    <button class="nav-tab" onclick="showScreen('screen-costs')">💼 הוצאות מעסיק</button>
   </div>
   <button class="sync-btn" onclick="syncGist()" title="שמור לענן GitHub Gist">☁️ סנכרן</button>
 </div>
@@ -424,13 +425,15 @@
         <div class="stat-val" id="stat-base">₪0</div>
         <div class="stat-label">שכר בסיס</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-val" id="stat-vac-left">0</div>
-        <div class="stat-label">ימי חופשה נותרים</div>
+      <div class="stat-card" style="border-color:rgba(129,140,248,0.4);">
+        <div class="stat-val" id="stat-hol-left" style="background:linear-gradient(135deg,var(--holiday),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">0</div>
+        <div class="stat-label">ימי חג נותרים</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;"><span id="stat-hol-used">0</span> / <span id="stat-hol-total">0</span> שנוצלו</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-val" id="stat-vac-used">0</div>
-        <div class="stat-label">ימי חופשה שנוצלו</div>
+      <div class="stat-card" style="border-color:rgba(52,211,153,0.3);">
+        <div class="stat-val" id="stat-vac-left" style="background:linear-gradient(135deg,var(--success),#059669);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">0</div>
+        <div class="stat-label">ימי חופשה נותרים</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:2px;"><span id="stat-vac-used">0</span> / <span id="stat-vac-total-top">0</span> שנוצלו</div>
       </div>
     </div>
 
@@ -487,24 +490,49 @@
           <input type="number" id="w-holiday-bonus" placeholder="150" oninput="saveWorker()" />
         </div>
         <div class="form-group">
-          <label>ימי חופשה שנתיים זכאות</label>
-          <input type="number" id="w-vac-total" placeholder="14" oninput="saveWorker()" />
-        </div>
-        <div class="form-group">
           <label>ימי מחלה שנתיים</label>
           <input type="number" id="w-sick-total" placeholder="18" oninput="saveWorker()" />
         </div>
-        <div class="form-group">
-          <label>ימי חופשה שנוצלו</label>
-          <input type="number" id="w-vac-used" placeholder="0" oninput="saveWorker()" />
+      </div>
+
+      <!-- ימי חג שנתיים -->
+      <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
+        <div style="font-size:14px; font-weight:700; color:var(--holiday); margin-bottom:12px;">🎉 ימי חג שנתיים</div>
+        <div class="form-grid" style="margin-bottom:12px;">
+          <div class="form-group">
+            <label>זכאות ימי חג שנתיים</label>
+            <input type="number" id="w-hol-total" placeholder="12" oninput="saveWorker()" />
+          </div>
+        </div>
+        <div style="font-size:13px; color:var(--text2); margin-bottom:6px;">
+          ניצול ימי חג – כל חג שעבדה בו נספר כיום חג שנוצל
+        </div>
+        <div class="vac-summary">
+          <div class="vac-pill" style="border-color:rgba(129,140,248,0.4);">זכאות: <span id="hol-total-disp">0</span> ימים</div>
+          <div class="vac-pill" style="border-color:rgba(129,140,248,0.4);">נוצל: <span id="hol-used-disp">0</span> ימים</div>
+          <div class="vac-pill" style="border-color:rgba(129,140,248,0.4);color:var(--holiday);">נותר: <span id="hol-left-disp">0</span> ימים</div>
+        </div>
+        <div class="vacation-bar" style="margin-top:10px; max-width:400px;">
+          <div class="vacation-fill" id="hol-bar" style="width:0%; background:linear-gradient(90deg,var(--holiday),var(--accent2));"></div>
         </div>
       </div>
-      <div style="margin-top:16px;">
-        <div style="font-size:13px; color:var(--text2); margin-bottom:6px;">ניצול חופשה</div>
+
+      <!-- ימי חופשה שנתיים -->
+      <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
+        <div style="font-size:14px; font-weight:700; color:var(--success); margin-bottom:12px;">🏖️ ימי חופשה שנתיים</div>
+        <div class="form-grid" style="margin-bottom:12px;">
+          <div class="form-group">
+            <label>זכאות ימי חופשה שנתיים</label>
+            <input type="number" id="w-vac-total" placeholder="14" oninput="saveWorker()" />
+          </div>
+        </div>
+        <div style="font-size:13px; color:var(--text2); margin-bottom:6px;">
+          ימי חופשה מחושבים מהשדה הידני בכל חודש
+        </div>
         <div class="vac-summary">
           <div class="vac-pill">זכאות: <span id="vac-total-disp">0</span> ימים</div>
           <div class="vac-pill">נוצל: <span id="vac-used-disp">0</span> ימים</div>
-          <div class="vac-pill">נותר: <span id="vac-left-disp">0</span> ימים</div>
+          <div class="vac-pill" style="color:var(--success);">נותר: <span id="vac-left-disp">0</span> ימים</div>
         </div>
         <div class="vacation-bar" style="margin-top:10px; max-width:400px;">
           <div class="vacation-fill" id="vac-bar" style="width:0%"></div>
@@ -568,6 +596,66 @@
     </div>
   </div>
 
+  <!-- ══════════════ SCREEN 3: EMPLOYER COSTS ══════════════ -->
+  <div id="screen-costs" class="screen">
+
+    <!-- סיכום מצטבר -->
+    <div class="stats-row" id="costs-stats-row">
+      <div class="stat-card">
+        <div class="stat-val" id="cs-total-salary">₪0</div>
+        <div class="stat-label">סה״כ שכר ששולם</div>
+      </div>
+      <div class="stat-card" style="border-color:rgba(251,191,36,0.4);">
+        <div class="stat-val" id="cs-total-employer" style="background:linear-gradient(135deg,#f59e0b,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">₪0</div>
+        <div class="stat-label">סה״כ הוצ׳ מעסיק</div>
+      </div>
+      <div class="stat-card" style="border-color:rgba(248,113,113,0.3);">
+        <div class="stat-val" id="cs-total-all" style="background:linear-gradient(135deg,var(--danger),#dc2626);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">₪0</div>
+        <div class="stat-label">עלות כוללת למעסיק</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-val" id="cs-months-count">0</div>
+        <div class="stat-label">חודשים מנוהלים</div>
+      </div>
+    </div>
+
+    <!-- הגדרות שיעורי מעסיק (שמורים בפרופיל העובדת) -->
+    <div class="card">
+      <div class="card-title"><span class="icon">⚙️</span> הגדרת שיעורי הוצאות מעסיק</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">הגדר פעם אחת – יחושב אוטומטית לכל החודשים</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>ביטוח לאומי – חלק מעסיק (%)</label>
+          <input type="number" id="r-bituach" placeholder="3.55" step="0.01" oninput="saveRates()" />
+        </div>
+        <div class="form-group">
+          <label>פנסיה / קרן השתלמות – מעסיק (%)</label>
+          <input type="number" id="r-pension" placeholder="6" step="0.01" oninput="saveRates()" />
+        </div>
+        <div class="form-group">
+          <label>ימי הבראה שנתיים (ימים/שנה)</label>
+          <input type="number" id="r-havra-days" placeholder="6" step="1" oninput="saveRates()" />
+        </div>
+        <div class="form-group">
+          <label>תעריף יום הבראה (₪)</label>
+          <input type="number" id="r-havra-rate" placeholder="378" step="1" oninput="saveRates()" />
+        </div>
+      </div>
+      <div style="margin-top:12px;background:var(--surface2);border-radius:8px;padding:12px;font-size:13px;color:var(--text2);">
+        💡 הבראה מחושבת כסכום שנתי (<span id="havra-annual-disp">0</span> ₪/שנה) ומחולק ל-12 חודשים = <strong id="havra-monthly-disp" style="color:var(--accent)">0</strong> ₪/חודש
+      </div>
+    </div>
+
+    <!-- טבלה חודשית מפורטת -->
+    <div class="card">
+      <div class="card-title"><span class="icon">📋</span> פירוט חודשי – הוצאות מעסיק</div>
+      <div id="costs-table-container">
+        <div style="color:var(--text3);text-align:center;padding:32px;">אין חודשים מוגדרים עדיין</div>
+      </div>
+    </div>
+
+  </div>
+
 </div><!-- /main -->
 
 <!-- ══════════════ MONTH MODAL ══════════════ -->
@@ -594,9 +682,19 @@
         <input type="number" id="m-expenses" placeholder="0" value="0" />
       </div>
       <div class="form-group">
+        <label>ימי חופשה / מחלה החודש 🏖️</label>
+        <input type="number" id="m-vac-days" placeholder="0" value="0" min="0" />
+      </div>
+      <div class="form-group">
         <label>הערות</label>
         <input type="text" id="m-notes" placeholder="הערות חופשיות..." />
       </div>
+    </div>
+
+    <!-- הוצאות מעסיק מחושבות -->
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--warn);margin-bottom:10px;">💼 הוצאות מעסיק – חישוב אוטומטי</div>
+      <div id="modal-employer-costs" style="font-size:13px;color:var(--text2);">הזן שכר בסיס כדי לחשב</div>
     </div>
 
     <!-- Calendar -->

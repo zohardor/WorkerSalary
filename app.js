@@ -745,49 +745,67 @@ function renderCostsScreen() {
     return;
   }
 
-  let cumSalary = 0, cumBituach = 0, cumPension = 0, cumHavra = 0, cumEmployer = 0;
+  const w = appData.worker;
   const r = appData.rates || {};
+  let cumGross = 0, cumBituach = 0, cumPension = 0, cumHavra = 0, cumEmployer = 0;
 
   const rows = months.map(([key, m]) => {
     const [yr, mo] = key.split('-');
     const label = HEB_MONTHS[parseInt(mo)-1] + ' ' + yr;
-    const gross = parseFloat(m.base) || 0;
-    const c = calcEmployerCosts(gross);
-    cumSalary   += gross;
+
+    // ברוטו מלא = בסיס + שבתות + חגים + החזר הוצאות
+    const base    = parseFloat(m.base) || 0;
+    const sabBonus = parseFloat(w.shabbatBonus) || 0;
+    const holBonus = parseFloat(w.holidayBonus) || 0;
+    const nSab    = (m.shabbats || []).length;
+    const nHol    = (m.holidays || []).length;
+    const exp     = parseFloat(m.expenses) || 0;
+    const gross   = base + nSab * sabBonus + nHol * holBonus + exp;
+
+    const c = calcEmployerCosts(base); // ב"ל ופנסיה על שכר בסיס בלבד (נהוג)
+    cumGross    += gross;
     cumBituach  += c.bituach;
     cumPension  += c.pension;
     cumHavra    += c.havraMonthly;
     cumEmployer += c.total;
+
     const monthTotal = gross + c.total;
+
+    const detailParts = [];
+    if (nSab) detailParts.push(`${nSab} שב׳`);
+    if (nHol) detailParts.push(`${nHol} חג`);
+    if (exp)  detailParts.push(`החזר ₪${exp.toLocaleString()}`);
+    const detail = detailParts.length ? `<div style="font-size:11px;color:var(--text3);">${detailParts.join(' · ')}</div>` : '';
 
     return `
       <tr style="border-bottom:1px solid var(--border);">
         <td style="padding:10px 8px;font-weight:600;white-space:nowrap;">${label}</td>
-        <td style="padding:10px 8px;text-align:left;font-weight:600;">₪${gross.toLocaleString()}</td>
         <td style="padding:10px 8px;text-align:left;">
-          <div style="font-weight:600;color:var(--text);">₪${c.bituach.toFixed(0)}</div>
+          <div style="font-weight:600;">₪${gross.toLocaleString()}</div>
+          ${detail}
+        </td>
+        <td style="padding:10px 8px;text-align:left;">
+          <div style="font-weight:600;">₪${c.bituach.toFixed(0)}</div>
           ${r.bituach ? `<div style="font-size:11px;color:var(--text3);">${r.bituach}%</div>` : ''}
         </td>
         <td style="padding:10px 8px;text-align:left;">
-          <div style="font-weight:600;color:var(--text);">₪${c.pension.toFixed(0)}</div>
+          <div style="font-weight:600;">₪${c.pension.toFixed(0)}</div>
           ${r.pension ? `<div style="font-size:11px;color:var(--text3);">${r.pension}%</div>` : ''}
         </td>
         <td style="padding:10px 8px;text-align:left;">
-          <div style="font-weight:600;color:var(--text);">₪${c.havraMonthly.toFixed(0)}</div>
+          <div style="font-weight:600;">₪${c.havraMonthly.toFixed(0)}</div>
           ${r.havraDays ? `<div style="font-size:11px;color:var(--text3);">${r.havraDays}י×₪${r.havraRate}÷12</div>` : ''}
         </td>
         <td style="padding:10px 8px;text-align:left;">
           <div style="font-weight:700;color:var(--warn);">₪${c.total.toFixed(0)}</div>
-          <div style="font-size:11px;color:var(--text3);">מצטבר: ₪${cumEmployer.toFixed(0)}</div>
         </td>
         <td style="padding:10px 8px;text-align:left;">
           <div style="font-weight:700;color:var(--danger);">₪${monthTotal.toFixed(0)}</div>
-          <div style="font-size:11px;color:var(--text3);">מצטבר: ₪${(cumSalary+cumEmployer).toFixed(0)}</div>
         </td>
       </tr>`;
   }).join('');
 
-  const totalAll = cumSalary + cumEmployer;
+  const totalAll = cumGross + cumEmployer;
 
   document.getElementById('costs-table-container').innerHTML = `
     <div style="overflow-x:auto;">
@@ -795,9 +813,9 @@ function renderCostsScreen() {
       <thead>
         <tr style="border-bottom:2px solid var(--border);color:var(--text2);">
           <th style="padding:8px;text-align:right;font-weight:600;">חודש</th>
-          <th style="padding:8px;text-align:left;font-weight:600;">שכר ברוטו</th>
+          <th style="padding:8px;text-align:left;font-weight:600;">ברוטו כולל</th>
           <th style="padding:8px;text-align:left;font-weight:600;">ביטוח לאומי</th>
-          <th style="padding:8px;text-align:left;font-weight:600;">פנסיה</th>
+          <th style="padding:8px;text-align:left;font-weight:600;">פנסיה + פיצויים</th>
           <th style="padding:8px;text-align:left;font-weight:600;">הבראה</th>
           <th style="padding:8px;text-align:left;font-weight:600;color:var(--warn);">הוצ׳ מעסיק</th>
           <th style="padding:8px;text-align:left;font-weight:600;color:var(--danger);">עלות כוללת</th>
@@ -805,20 +823,22 @@ function renderCostsScreen() {
       </thead>
       <tbody>
         ${rows}
+      </tbody>
+      <tfoot>
         <tr style="border-top:2px solid var(--border);background:var(--surface2);">
           <td style="padding:12px 8px;font-weight:700;">סה״כ מצטבר</td>
-          <td style="padding:12px 8px;text-align:left;font-weight:700;">₪${cumSalary.toLocaleString()}</td>
+          <td style="padding:12px 8px;text-align:left;font-weight:700;">₪${cumGross.toLocaleString()}</td>
           <td style="padding:12px 8px;text-align:left;font-weight:700;">₪${cumBituach.toFixed(0)}</td>
           <td style="padding:12px 8px;text-align:left;font-weight:700;">₪${cumPension.toFixed(0)}</td>
           <td style="padding:12px 8px;text-align:left;font-weight:700;">₪${cumHavra.toFixed(0)}</td>
           <td style="padding:12px 8px;text-align:left;font-weight:700;color:var(--warn);">₪${cumEmployer.toFixed(0)}</td>
           <td style="padding:12px 8px;text-align:left;font-weight:700;color:var(--danger);">₪${totalAll.toFixed(0)}</td>
         </tr>
-      </tbody>
+      </tfoot>
     </table>
     </div>`;
 
-  setText('cs-total-salary',   '₪' + cumSalary.toLocaleString());
+  setText('cs-total-salary',   '₪' + cumGross.toLocaleString());
   setText('cs-total-employer', '₪' + cumEmployer.toLocaleString());
   setText('cs-total-all',      '₪' + totalAll.toLocaleString());
   setText('cs-months-count',   months.length);

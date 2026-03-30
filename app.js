@@ -22,10 +22,29 @@ document.addEventListener('DOMContentLoaded', () => {
   renderMonthsList();
   updateWorkerStats();
   updateVacBar();
+  applyPlanGates();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
 });
+
+// הפעל/כבה את כל חסימות הגרסה החינמית
+function applyPlanGates() {
+  const premium = isPremium();
+
+  // מסמכים — blur overlay
+  const docsGate = document.getElementById('docs-gate');
+  if (docsGate) docsGate.style.display = premium ? 'none' : 'block';
+
+  // טאב הוצאות מעסיק — הוסף/הסר מנעול
+  const costTab = document.querySelector('.nav-tab[onclick*="screen-costs"]');
+  if (costTab) {
+    costTab.textContent = premium ? '💼 הוצאות מעסיק' : '💼 הוצאות מעסיק 🔒';
+  }
+
+  // הודעת מגבלת חודשים
+  renderMonthsList();
+}
 
 // ─────────────── LOCAL STORAGE ───────────────
 function saveLocal() {
@@ -55,7 +74,10 @@ function showScreen(id) {
   const idx = ['screen-guide','screen-worker','screen-salary','screen-costs','screen-premium'].indexOf(id);
   document.querySelectorAll('.nav-tab')[idx].classList.add('active');
   if (id === 'screen-salary')  renderMonthsList();
-  if (id === 'screen-costs')   { populateRatesForm(); renderCostsScreen(); }
+  if (id === 'screen-costs')   {
+    if (!requirePremium('ניהול הוצאות מעסיק')) return;
+    populateRatesForm(); renderCostsScreen();
+  }
   if (id === 'screen-premium') renderPremiumScreen();
 }
 
@@ -169,6 +191,13 @@ function updateVacBar() {
 function renderMonthsList() {
   const container = document.getElementById('months-list');
   const months = Object.entries(appData.months).sort((a,b) => b[0].localeCompare(a[0]));
+
+  // הצג הודעת מגבלה לגרסה חינמית
+  const notice = document.getElementById('free-months-notice');
+  if (notice) {
+    notice.style.display = (!isPremium() && months.length >= 1) ? 'inline' : 'none';
+  }
+
   if (!months.length) {
     container.innerHTML = '<div style="color:var(--text3);text-align:center;padding:40px;">אין חודשים מוגדרים. לחץ "הוספת חודש" להתחיל.</div>';
     return;
@@ -205,6 +234,13 @@ function calcTotal(m) {
 
 // ─────────────── MODAL ───────────────
 function openMonthModal(key = null, pdfOnly = false) {
+  // גרסה חינמית: רק חודש אחד
+  if (!isPremium() && !key) {
+    const existingMonths = Object.keys(appData.months);
+    if (existingMonths.length >= 1) {
+      if (!requirePremium('ניהול חודשי ללא הגבלה')) return;
+    }
+  }
   const modal = document.getElementById('month-modal');
   modal.classList.add('open');
 
@@ -670,19 +706,38 @@ document.addEventListener('input', e => {
   }
 });
 
+// ─────────────── PLAN GATING ───────────────
+// החלף ל-true כשמשתמש משלם (Supabase: profiles.plan === 'premium')
+function isPremium() {
+  return appData.profile?.plan === 'premium' ||
+         localStorage.getItem('shakaron_premium') === 'true';
+}
+
+// חסום גישה לפיצ'ר פרימיום — מציג blur + lock ופותח מסך פרימיום
+function requirePremium(featureName) {
+  if (isPremium()) return true;
+  toast(`🔒 ${featureName} זמין בגרסת הפרימיום`);
+  setTimeout(() => showScreen('screen-premium'), 800);
+  return false;
+}
+
 // ─────────────── PREMIUM SCREEN ───────────────
 const FEATURES = [
-  { label: 'ניהול עובדת אחת',          free: true,  pro: true  },
-  { label: 'לוח שנה + חגים אוטומטיים', free: true,  pro: true  },
-  { label: 'דוח PDF חודשי',            free: true,  pro: true  },
-  { label: 'מדריך העסקה מלא',          free: true,  pro: true  },
-  { label: 'היסטוריה ללא הגבלה',       free: false, pro: true  },
-  { label: 'סנכרון ענן אוטומטי',       free: false, pro: true  },
-  { label: 'תזכורות ויזה + ב"ל',       free: false, pro: true  },
-  { label: 'ייצוא Excel לרואה חשבון',  free: false, pro: true  },
-  { label: 'עובדות מרובות',            free: false, pro: true  },
-  { label: 'דוח PDF עם לוגו משפחתי',   free: false, pro: true  },
-  { label: 'גיבוי אוטומטי יומי',       free: false, pro: true  },
+  { label: 'פרטי עובדת (שם, דרכון, ויזה)',   free: true,  pro: true  },
+  { label: 'תנאי שכר בסיסיים',                free: true,  pro: true  },
+  { label: 'חודש חישוב אחד',                  free: true,  pro: true  },
+  { label: 'לוח שנה + חגים אוטומטיים',        free: true,  pro: true  },
+  { label: 'PDF בסיסי לחודש אחד',             free: true,  pro: true  },
+  { label: 'מדריך העסקה המלא',                free: true,  pro: true  },
+  { label: 'היסטוריה ללא הגבלה',              free: false, pro: true  },
+  { label: 'ניהול חודשי ללא הגבלה',           free: false, pro: true  },
+  { label: 'תלושי שכר PDF מקצועיים',          free: false, pro: true  },
+  { label: 'ניהול הוצאות מעסיק',              free: false, pro: true  },
+  { label: 'מעקב ימי חג וחופשה',              free: false, pro: true  },
+  { label: 'סנכרון ענן אוטומטי',              free: false, pro: true  },
+  { label: 'תזכורות ויזה + תשלומי ב"ל',       free: false, pro: true  },
+  { label: 'ייצוא Excel לרואה חשבון',         free: false, pro: true  },
+  { label: 'צירוף מסמכים (דרכון, חוזה)',       free: false, pro: true  },
 ];
 
 function renderPremiumScreen() {
@@ -692,14 +747,23 @@ function renderPremiumScreen() {
     tbody.innerHTML = FEATURES.map(f => `
       <tr style="border-bottom:1px solid var(--border);">
         <td style="padding:9px 8px;font-size:13px;">${f.label}</td>
-        <td style="padding:9px 16px;text-align:center;font-size:16px;">${f.free ? '✓' : '<span style="color:var(--text3);">—</span>'}</td>
+        <td style="padding:9px 16px;text-align:center;font-size:16px;">${f.free ? '<span style="color:var(--success);">✓</span>' : '<span style="color:var(--text3);">—</span>'}</td>
         <td style="padding:9px 16px;text-align:center;font-size:16px;background:rgba(91,127,255,0.05);">${f.pro ? '<span style="color:var(--success);">✓</span>' : '—'}</td>
       </tr>`).join('');
   }
-  // Signup count from localStorage
+  // Signup count
   const count = parseInt(localStorage.getItem('signup_count') || '0');
   const el = document.getElementById('signup-count-display');
   if (el) el.innerHTML = `הצטרפו כבר <strong style="color:var(--accent);">${count}</strong> משפחות לרשימת המתנה`;
+
+  // Dev toggle (הסר בפרודקשן)
+  const devArea = document.getElementById('dev-toggle-area');
+  if (devArea) {
+    const on = isPremium();
+    devArea.innerHTML = `<button class="btn btn-outline btn-sm" onclick="toggleDevPremium()" style="font-size:11px;color:var(--text3);">
+      🔧 מצב פיתוח: ${on ? 'פרימיום ✓' : 'חינמי'}
+    </button>`;
+  }
 }
 
 function openSignup(plan) {
@@ -737,6 +801,14 @@ function submitSignup() {
   setV('signup-phone', ''); setV('signup-feedback', '');
   renderPremiumScreen();
   toast('✓ נרשמת בהצלחה!');
+}
+
+function toggleDevPremium() {
+  const current = localStorage.getItem('shakaron_premium') === 'true';
+  localStorage.setItem('shakaron_premium', (!current).toString());
+  applyPlanGates();
+  renderPremiumScreen();
+  toast(current ? '🔓 מצב חינמי' : '⭐ מצב פרימיום');
 }
 
 async function syncSignupsToGist(signups) {

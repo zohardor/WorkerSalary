@@ -396,6 +396,48 @@
     .vac-pill span { color: var(--accent); font-weight: 700; }
 
     .section-actions { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+
+    /* ── PREMIUM LOCK ── */
+    .premium-gate {
+      position: relative;
+      pointer-events: none;
+      user-select: none;
+    }
+    .premium-gate::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      background: rgba(15,17,23,0.55);
+      border-radius: var(--radius);
+      z-index: 10;
+    }
+    .premium-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 11;
+      gap: 10px;
+      pointer-events: all;
+      cursor: pointer;
+    }
+    .lock-icon {
+      font-size: 32px;
+      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+    }
+    .lock-label {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text);
+      background: rgba(91,127,255,0.15);
+      border: 1px solid var(--accent);
+      border-radius: 20px;
+      padding: 6px 18px;
+    }
     /* ── GUIDE ── */
     .guide-phase-btn {
       padding: 8px 16px;
@@ -544,7 +586,7 @@
     <button class="nav-tab active" onclick="showScreen('screen-guide')">📖 מדריך</button>
     <button class="nav-tab" onclick="showScreen('screen-worker')">👤 פרטי עובדת</button>
     <button class="nav-tab" onclick="showScreen('screen-salary')">📅 ניהול חודשי</button>
-    <button class="nav-tab" onclick="showScreen('screen-costs')">💼 הוצאות מעסיק</button>
+    <button class="nav-tab" onclick="showScreen('screen-costs')">💼 הוצאות מעסיק 🔒</button>
     <button class="nav-tab" onclick="showScreen('screen-premium')" style="color:var(--warn);">⭐ פרימיום</button>
   </div>
   <button class="sync-btn" onclick="syncGist()" title="שמור לענן GitHub Gist">☁️ סנכרן</button>
@@ -679,7 +721,7 @@
       </div>
     </div>
 
-    <div class="card">
+    <div class="card" id="docs-card" style="position:relative;">
       <div class="card-title"><span class="icon">📎</span> מסמכים</div>
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
         <div>
@@ -720,6 +762,13 @@
         <button class="btn btn-outline btn-sm" onclick="importJSON()" style="margin-right:8px;">⬆️ ייבא נתונים</button>
         <input type="file" id="import-file" accept=".json" style="display:none" onchange="doImport(this)" />
       </div>
+      <!-- Premium gate overlay (shown for free users) -->
+      <div id="docs-gate" class="premium-gate" style="position:absolute;inset:0;border-radius:var(--radius);display:none;">
+        <div class="premium-overlay" onclick="showScreen('screen-premium')">
+          <div class="lock-icon">🔒</div>
+          <div class="lock-label">צירוף מסמכים – פרימיום בלבד</div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -729,6 +778,9 @@
     <div class="section-actions">
       <button class="btn btn-primary" onclick="openMonthModal()">＋ הוספת חודש</button>
       <button class="btn btn-outline" onclick="openMonthModal(null, true)">📊 דוח שכר (PDF)</button>
+      <span id="free-months-notice" style="font-size:12px;color:var(--text3);align-self:center;display:none;">
+        🔒 גרסה חינמית — חודש אחד בלבד. <a href="#" onclick="showScreen('screen-premium');return false;" style="color:var(--accent);">שדרג לפרימיום</a>
+      </span>
     </div>
     <div id="months-list">
       <div style="color:var(--text3); text-align:center; padding:40px;">אין חודשים מוגדרים. לחץ "הוספת חודש" להתחיל.</div>
@@ -1192,6 +1244,7 @@
       <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--text3);">
         <span id="signup-count-display">הצטרפו כבר <strong style="color:var(--accent);">0</strong> משפחות לרשימת המתנה</span>
       </div>
+      <div style="text-align:center;margin-top:12px;" id="dev-toggle-area"></div>
     </div>
 
   </div>

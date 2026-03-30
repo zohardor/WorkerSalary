@@ -1,72 +1,52 @@
 # שכרון ✦ – מערכת ניהול שכר עובדת זרה
 
-אפליקציית PWA לניהול שכר עובדת זרה, כולל לוח שנה אינטראקטיבי, חגים ישראלים + לאומיים, ודוחות PDF.
+אפליקציית PWA לניהול שכר עובדת זרה — לוח שנה אינטראקטיבי, חגים ישראלים + לאומיים, דוחות PDF, מדריך העסקה מלא.
 
 ---
 
-## 🚀 העלאה ל-GitHub Pages (הדרכה מלאה)
+## 🚀 העלאה ל-GitHub + GitHub Pages
 
-### שלב 1 – צור חשבון GitHub (אם אין לך)
-1. גש ל-[github.com](https://github.com) והירשם
-2. אשר את כתובת המייל שלך
+### שלב 1 – צור חשבון GitHub
+אם אין לך חשבון: https://github.com → Sign up
 
-### שלב 2 – צור Repository חדש
-1. לחץ על **"New"** (בצד שמאל למעלה, כפתור ירוק)
-2. שם: `shakaron` (או כל שם שתבחר)
-3. ✅ **Public** (נדרש לשימוש חינמי ב-GitHub Pages)
-4. לחץ **"Create repository"**
+### שלב 2 – צור Repository
+1. לחץ "New" (כפתור ירוק בצד שמאל)
+2. Repository name: shakaron
+3. בחר Public (נדרש ל-GitHub Pages חינמי)
+4. אל תסמן Initialize with README
+5. לחץ "Create repository"
 
-### שלב 3 – העלה את הקבצים
-**אפשרות א׳ – דרך הדפדפן (הפשוטה ביותר):**
-1. בדף ה-Repository שיצרת, לחץ **"uploading an existing file"**
-2. גרור לשם את **כל** הקבצים מהתיקייה שהורדת
-3. שים לב לשמור גם את תיקיות `.github/workflows/` ו-`icons/`
-4. לחץ **"Commit changes"**
+### שלב 3 – העלה קבצים דרך הדפדפן
+1. בדף ה-Repository החדש לחץ "uploading an existing file"
+2. פתח את תיקיית worker-salary-app על המחשב
+3. סמן את כל הקבצים והתיקיות (Ctrl+A)
+4. גרור לחלון הדפדפן
+5. כתוב בתיבת ה-Commit: Initial commit
+6. לחץ "Commit changes"
 
-**אפשרות ב׳ – דרך Git (למפתחים):**
-```bash
-cd shakaron
-git init
-git add .
-git commit -m "Initial commit – שכרון"
-git branch -M main
-git remote add origin https://github.com/YOUR_USERNAME/shakaron.git
-git push -u origin main
-```
+⚠️ חשוב: ודא שהתיקיות .github/workflows/ ו-supabase/ עולות גם הן
 
 ### שלב 4 – הפעל GitHub Pages
-1. ב-Repository שלך, לחץ **Settings** (גלגל שיניים בלשונית עליונה)
-2. בתפריט השמאלי, לחץ **"Pages"**
-3. תחת **"Source"** – בחר **"GitHub Actions"**
-4. המתן ~2 דקות
-5. הכתובת תופיע: `https://YOUR_USERNAME.github.io/shakaron/`
+1. ב-Repository לחץ Settings
+2. בתפריט שמאל לחץ "Pages"
+3. תחת Source בחר "GitHub Actions"
+4. המתן 2-3 דקות
+5. הכתובת: https://YOUR_USERNAME.github.io/shakaron/
 
 ---
 
-## 🔑 יצירת GitHub Token לסנכרון נתונים (GitHub Gist)
+## ☁️ חיבור ל-Supabase
 
-הטוקן מאפשר לאפליקציה לשמור נתונים בענן דרך GitHub Gist.
+ראה supabase/SETUP.md להוראות מפורטות.
 
-### שלב 1 – פתח הגדרות Token
-1. לחץ על תמונת הפרופיל שלך (ימין למעלה)
-2. **Settings** → **Developer settings** (בתחתית התפריט השמאלי)
-3. **Personal access tokens** → **Tokens (classic)**
-4. לחץ **"Generate new token (classic)"**
+---
 
-### שלב 2 – הגדר את הטוקן
-- **Note:** `Shakaron App`
-- **Expiration:** בחר תאריך (מומלץ: 1 year)
-- **Scopes:** ✅ **gist** (זה הכל שצריך!)
-- לחץ **"Generate token"**
+## 🔑 GitHub Token לסנכרון Gist
 
-### שלב 3 – שמור את הטוקן
-⚠️ **חשוב!** העתק את הטוקן עכשיו – לא תוכל לראותו שוב!
-
-### שלב 4 – הזן באפליקציה
-1. פתח את האפליקציה
-2. לחץ **☁️ סנכרן** (בפינה השמאלית העליונה)
-3. הזן את הטוקן כשתתבקש
-4. הנתונים יישמרו ב-GitHub Gist פרטי שלך
+1. GitHub → Settings → Developer settings → Tokens (classic)
+2. Generate new token → Scope: gist בלבד
+3. העתק מיד (לא יוצג שוב)
+4. הזן באפליקציה: לחץ ☁️ סנכרן
 
 ---
 
@@ -75,68 +55,16 @@ git push -u origin main
 ```
 shakaron/
 ├── index.html          # האפליקציה הראשית
-├── app.js              # לוגיקה: שמירה, חישוב שכר, PDF
-├── holidays.js         # מאגר חגים (ישראלי + הודי + נוספים)
-├── sw.js               # Service Worker (PWA offline)
+├── app.js              # לוגיקה ראשית
+├── holidays.js         # מאגר חגים
+├── sw.js               # Service Worker
 ├── manifest.json       # הגדרות PWA
 ├── icons/
-│   ├── icon-192.svg    # אייקון (192px)
-│   └── icon-512.svg    # אייקון (512px)
-├── .github/
-│   └── workflows/
-│       └── deploy.yml  # GitHub Actions – פריסה אוטומטית
-└── README.md           # קובץ זה
-```
-
----
-
-## 📱 התקנה כאפליקציה בנייד
-
-### Android (Chrome):
-1. פתח את הכתובת `https://YOUR_USERNAME.github.io/shakaron/`
-2. לחץ על ⋮ (שלוש נקודות) → **"הוסף למסך הבית"**
-3. לחץ **"הוסף"**
-
-### iOS (Safari):
-1. פתח את הכתובת ב-Safari
-2. לחץ על כפתור **Share** (ריבוע עם חץ למעלה)
-3. גלול למטה → **"הוסף למסך הבית"**
-4. לחץ **"הוסף"**
-
----
-
-## 💡 שימוש באפליקציה
-
-### מסך 1 – פרטי עובדת
-- הזן שם, מספר דרכון, לאומיות, תאריכי ויזה
-- הגדר שכר בסיס, תוספת שבת, תוספת חג
-- הגדר זכאות ימי חופשה ועקוב אחר הניצול
-- צרף מסמכים: דרכון, חוזה, נספחים
-
-### מסך 2 – ניהול חודשי
-- לחץ **"הוספת חודש"**
-- בלוח השנה – **לחץ על יום שבת** שעבדה → מסומן בכתום
-- **לחץ על יום חג** שעבדה → מסומן בסגול
-- חגים ישראלים + הודיים מסומנים אוטומטית
-- הסכום מחושב אוטומטית
-- לחץ **PDF** לדוח שכר מלא
-
-### סנכרון נתונים
-- **JSON מקומי:** כפתור "ייצא נתונים" – מוריד קובץ JSON
-- **GitHub Gist:** כפתור "☁️ סנכרן" – שומר בענן
-
----
-
-## 🔧 הוספת חגים
-
-ערוך את `holidays.js` – כל לאום מכיל מערך תאריכים בפורמט `YYYY-MM-DD`.
-להוספת לאום חדש:
-```javascript
-myanmar: {
-  name: "חגים מיאנמר",
-  color: "#10b981",
-  days: ["2025-01-04", ...]
-}
+├── supabase/
+│   ├── schema.sql      # סכמת DB + RLS
+│   ├── supabase.js     # שכבת נתונים
+│   └── SETUP.md        # מדריך הגדרה
+└── .github/workflows/  # פריסה אוטומטית
 ```
 
 ---

@@ -162,7 +162,6 @@ async function saveWorkerToDb() {
   if (!db) return;
 
   const workerData = {
-    user_id:       currentUser?.id || '00000000-0000-0000-0000-000000000001',
     name:          appData.worker.name,
     passport:      appData.worker.passport,
     nationality:   appData.worker.nationality,
@@ -176,6 +175,9 @@ async function saveWorkerToDb() {
     hol_total:     appData.worker.holTotal,
     sick_total:    appData.worker.sickTotal,
   };
+
+  // הוסף user_id רק אם מחובר
+  if (currentUser?.id) workerData.user_id = currentUser.id;
 
   let result;
   if (currentWorker?.id) {

@@ -1,1 +1,5 @@
-
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="32" fill="#1a1f2e"/>
+  <text x="96" y="80" font-family="Arial" font-size="64" text-anchor="middle" fill="#5b7fff">₪</text>
+  <text x="96" y="145" font-family="Arial" font-size="28" font-weight="bold" text-anchor="middle" fill="#a78bfa">שכרון</text>
+</svg>

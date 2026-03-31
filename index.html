@@ -623,15 +623,15 @@
       <div class="form-grid">
         <div class="form-group">
           <label>שם מלא</label>
-          <input type="text" id="w-name" placeholder="שם פרטי ומשפחה" oninput="saveWorker()" />
+          <input type="text" id="w-name" placeholder="שם פרטי ומשפחה" oninput="saveWorkerToDb()" />
         </div>
         <div class="form-group">
           <label>מספר דרכון</label>
-          <input type="text" id="w-passport" placeholder="A1234567" oninput="saveWorker()" />
+          <input type="text" id="w-passport" placeholder="A1234567" oninput="saveWorkerToDb()" />
         </div>
         <div class="form-group">
           <label>לאומיות / מדינת מוצא</label>
-          <select id="w-nationality" onchange="saveWorker()">
+          <select id="w-nationality" onchange="saveWorkerToDb()">
             <option value="india">הודו 🇮🇳</option>
             <option value="philippines">פיליפינים 🇵🇭</option>
             <option value="nepal">נפאל 🇳🇵</option>
@@ -642,15 +642,15 @@
         </div>
         <div class="form-group">
           <label>תאריך תחילת עבודה</label>
-          <input type="date" id="w-start" oninput="saveWorker()" />
+          <input type="date" id="w-start" oninput="saveWorkerToDb()" />
         </div>
         <div class="form-group">
           <label>תאריך סיום ויזה</label>
-          <input type="date" id="w-visa" oninput="saveWorker()" />
+          <input type="date" id="w-visa" oninput="saveWorkerToDb()" />
         </div>
         <div class="form-group">
           <label>טלפון</label>
-          <input type="text" id="w-phone" placeholder="050-0000000" oninput="saveWorker()" />
+          <input type="text" id="w-phone" placeholder="050-0000000" oninput="saveWorkerToDb()" />
         </div>
       </div>
     </div>
@@ -660,19 +660,19 @@
       <div class="form-grid">
         <div class="form-group">
           <label>שכר בסיס ברוטו (₪)</label>
-          <input type="number" id="w-base" placeholder="7000" oninput="saveWorker()" />
+          <input type="number" id="w-base" placeholder="7000" oninput="saveWorkerToDb()" />
         </div>
         <div class="form-group">
           <label>תוספת שבת (₪ לכל שבת)</label>
-          <input type="number" id="w-shabbat-bonus" placeholder="200" oninput="saveWorker()" />
+          <input type="number" id="w-shabbat-bonus" placeholder="200" oninput="saveWorkerToDb()" />
         </div>
         <div class="form-group">
           <label>תוספת חג (₪ לכל חג)</label>
-          <input type="number" id="w-holiday-bonus" placeholder="150" oninput="saveWorker()" />
+          <input type="number" id="w-holiday-bonus" placeholder="150" oninput="saveWorkerToDb()" />
         </div>
         <div class="form-group">
           <label>ימי מחלה שנתיים</label>
-          <input type="number" id="w-sick-total" placeholder="18" oninput="saveWorker()" />
+          <input type="number" id="w-sick-total" placeholder="18" oninput="saveWorkerToDb()" />
         </div>
       </div>
 
@@ -682,7 +682,7 @@
         <div class="form-grid" style="margin-bottom:12px;">
           <div class="form-group">
             <label>זכאות ימי חג שנתיים</label>
-            <input type="number" id="w-hol-total" placeholder="12" oninput="saveWorker()" />
+            <input type="number" id="w-hol-total" placeholder="12" oninput="saveWorkerToDb()" />
           </div>
         </div>
         <div style="font-size:13px; color:var(--text2); margin-bottom:6px;">
@@ -704,7 +704,7 @@
         <div class="form-grid" style="margin-bottom:12px;">
           <div class="form-group">
             <label>זכאות ימי חופשה שנתיים</label>
-            <input type="number" id="w-vac-total" placeholder="14" oninput="saveWorker()" />
+            <input type="number" id="w-vac-total" placeholder="14" oninput="saveWorkerToDb()" />
           </div>
         </div>
         <div style="font-size:13px; color:var(--text2); margin-bottom:6px;">
@@ -817,19 +817,19 @@
       <div class="form-grid">
         <div class="form-group">
           <label>ביטוח לאומי – חלק מעסיק (%)</label>
-          <input type="number" id="r-bituach" placeholder="3.55" step="0.01" oninput="saveRates()" />
+          <input type="number" id="r-bituach" placeholder="3.55" step="0.01" oninput="saveRatesToDb()" />
         </div>
         <div class="form-group">
           <label>פנסיה / קרן השתלמות – מעסיק (%)</label>
-          <input type="number" id="r-pension" placeholder="6" step="0.01" oninput="saveRates()" />
+          <input type="number" id="r-pension" placeholder="6" step="0.01" oninput="saveRatesToDb()" />
         </div>
         <div class="form-group">
           <label>ימי הבראה שנתיים (ימים/שנה)</label>
-          <input type="number" id="r-havra-days" placeholder="6" step="1" oninput="saveRates()" />
+          <input type="number" id="r-havra-days" placeholder="6" step="1" oninput="saveRatesToDb()" />
         </div>
         <div class="form-group">
           <label>תעריף יום הבראה (₪)</label>
-          <input type="number" id="r-havra-rate" placeholder="378" step="1" oninput="saveRates()" />
+          <input type="number" id="r-havra-rate" placeholder="378" step="1" oninput="saveRatesToDb()" />
         </div>
       </div>
       <div style="margin-top:12px;background:var(--surface2);border-radius:8px;padding:12px;font-size:13px;color:var(--text2);">
@@ -1222,7 +1222,7 @@
         <textarea id="signup-feedback" placeholder="למשל: תזכורות אוטומטיות, דוחות לרואה חשבון..." style="height:60px;"></textarea>
       </div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="submitSignup()">📩 שלח הרשמה</button>
+        <button class="btn btn-primary" onclick="submitSignupToDb()">📩 שלח הרשמה</button>
         <button class="btn btn-outline" onclick="document.getElementById('signup-card').style.display='none'">ביטול</button>
         <span id="signup-msg" style="font-size:13px;color:var(--success);display:none;">✓ נרשמת בהצלחה! נעדכן אותך בקרוב.</span>
       </div>
@@ -1313,9 +1313,9 @@
     </div>
 
     <div class="modal-footer">
-      <button class="btn btn-danger btn-sm" id="delete-month-btn" onclick="deleteMonth()" style="display:none; margin-left:auto;">🗑️ מחק</button>
+      <button class="btn btn-danger btn-sm" id="delete-month-btn" onclick="deleteMonthFromDb(document.getElementById('editing-month-key').value)" style="display:none; margin-left:auto;">🗑️ מחק</button>
       <button class="btn btn-outline" onclick="closeModal()">ביטול</button>
-      <button class="btn btn-primary" onclick="saveMonth()">💾 שמור חודש</button>
+      <button class="btn btn-primary" onclick="saveMonthToDb()">💾 שמור חודש</button>
       <button class="btn btn-success" onclick="generatePDF()">📄 PDF</button>
     </div>
   </div>
@@ -1368,6 +1368,8 @@ function useWithoutLogin() {
 <!-- TOAST -->
 <div id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="supabase/supabase.js"></script>
 <script src="holidays.js"></script>
 <script src="app.js"></script>
 </body>

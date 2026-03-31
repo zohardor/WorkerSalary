@@ -53,9 +53,10 @@ function showAuthBanner() {
     <button onclick="signInWithGoogle()" style="padding:5px 14px;border-radius:6px;border:1px solid rgba(91,127,255,0.4);background:rgba(91,127,255,0.15);color:#5b7fff;font-size:12px;cursor:pointer;font-family:inherit;">
       התחברות עם Google
     </button>
-    <input id="banner-email" type="email" placeholder="או הכנס אימייל" style="padding:5px 10px;border-radius:6px;border:1px solid #2d3352;background:#1a1f2e;color:#e8eaf6;font-size:12px;font-family:inherit;" />
-    <button onclick="signInWithEmail(document.getElementById('banner-email').value)" style="padding:5px 14px;border-radius:6px;border:1px solid #2d3352;background:transparent;color:#9ba4c0;font-size:12px;cursor:pointer;font-family:inherit;">
-      שלח קישור
+    <input id="banner-email" type="email" placeholder="אימייל" style="padding:5px 10px;border-radius:6px;border:1px solid #2d3352;background:#1a1f2e;color:#e8eaf6;font-size:12px;font-family:inherit;width:160px;" />
+    <input id="banner-password" type="password" placeholder="סיסמה (אופציונלי)" style="padding:5px 10px;border-radius:6px;border:1px solid #2d3352;background:#1a1f2e;color:#e8eaf6;font-size:12px;font-family:inherit;width:140px;" />
+    <button onclick="signInWithEmailOrPassword()" style="padding:5px 14px;border-radius:6px;border:1px solid #2d3352;background:transparent;color:#9ba4c0;font-size:12px;cursor:pointer;font-family:inherit;">
+      כניסה
     </button>
     <button onclick="document.getElementById('auth-banner').remove()" style="margin-right:auto;background:transparent;border:none;color:#5a6280;cursor:pointer;font-size:16px;">✕</button>
   `;
@@ -85,6 +86,26 @@ async function signInWithGoogle() {
   if (error) toast('שגיאה: ' + error.message);
 }
 
+async function signInWithEmailOrPassword() {
+  if (!db) { toast('Supabase לא זמין'); return; }
+  const email    = document.getElementById('banner-email')?.value?.trim();
+  const password = document.getElementById('banner-password')?.value;
+  if (!email || !email.includes('@')) { toast('נא להכניס אימייל תקין'); return; }
+
+  if (password) {
+    // התחברות עם סיסמה
+    const { error } = await db.auth.signInWithPassword({ email, password });
+    if (error) toast('שגיאה: ' + error.message);
+  } else {
+    // Magic Link
+    const { error } = await db.auth.signInWithOtp({
+      email, options: { emailRedirectTo: window.location.href }
+    });
+    if (error) toast('שגיאה: ' + error.message);
+    else toast('✓ נשלח קישור למייל ' + email);
+  }
+}
+
 async function signInWithEmail(email) {
   if (!db) { toast('Supabase לא זמין'); return; }
   if (!email || !email.includes('@')) { toast('נא להכניס אימייל תקין'); return; }
@@ -112,10 +133,19 @@ async function onUserLoggedIn() {
 
   toast('✓ מחובר כ-' + (currentUser.email || 'משתמש'));
 
-  // טען פרופיל
-  const { data: profile } = await db
-    .from('profiles').select('*').eq('id', currentUser.id).single();
-  if (profile) appData.profile = profile;
+  // בדוק גישת פרימיום לפי מייל
+  const { data: premiumRow } = await db
+    .from('premium_access')
+    .select('plan, plan_until')
+    .eq('email', currentUser.email)
+    .maybeSingle();
+
+  if (premiumRow && (!premiumRow.plan_until || new Date(premiumRow.plan_until) > new Date())) {
+    appData.profile = { plan: premiumRow.plan };
+    localStorage.setItem('shakaron_premium', 'true');
+  } else {
+    localStorage.setItem('shakaron_premium', 'false');
+  }
 
   // טען עובדת פעילה
   const { data: workers } = await db

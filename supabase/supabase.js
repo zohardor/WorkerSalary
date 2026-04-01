@@ -27,7 +27,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // בדוק אם יש session קיים
     db.auth.getSession().then(({ data: { session } }) => {
       if (!session) {
-        showAuthBanner(); // הצג banner קטן, לא חוסם
+        showLoginScreen(); // הצג banner קטן, לא חוסם
       }
     });
 
@@ -37,42 +37,27 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── AUTH UI ───────────────────────────────────────────────────
-function showAuthBanner() {
-  // הוסף banner קטן בראש הדף במקום modal חוסם
-  const existing = document.getElementById('auth-banner');
-  if (existing) return;
-  const banner = document.createElement('div');
-  banner.id = 'auth-banner';
-  banner.style.cssText = `
-    background:rgba(91,127,255,0.12);border-bottom:1px solid rgba(91,127,255,0.3);
-    padding:8px 20px;display:flex;align-items:center;gap:12px;
-    font-size:13px;color:#9ba4c0;direction:rtl;flex-wrap:wrap;
-  `;
-  banner.innerHTML = `
-    <span>☁️ כדי לשמור נתונים בענן — התחבר</span>
-    <button onclick="signInWithGoogle()" style="padding:5px 14px;border-radius:6px;border:1px solid rgba(91,127,255,0.4);background:rgba(91,127,255,0.15);color:#5b7fff;font-size:12px;cursor:pointer;font-family:inherit;">
-      התחברות עם Google
-    </button>
-    <input id="banner-email" type="email" placeholder="אימייל" style="padding:5px 10px;border-radius:6px;border:1px solid #2d3352;background:#1a1f2e;color:#e8eaf6;font-size:12px;font-family:inherit;width:160px;" />
-    <input id="banner-password" type="password" placeholder="סיסמה (אופציונלי)" style="padding:5px 10px;border-radius:6px;border:1px solid #2d3352;background:#1a1f2e;color:#e8eaf6;font-size:12px;font-family:inherit;width:140px;" />
-    <button onclick="signInWithEmailOrPassword()" style="padding:5px 14px;border-radius:6px;border:1px solid #2d3352;background:transparent;color:#9ba4c0;font-size:12px;cursor:pointer;font-family:inherit;">
-      כניסה
-    </button>
-    <button onclick="document.getElementById('auth-banner').remove()" style="margin-right:auto;background:transparent;border:none;color:#5a6280;cursor:pointer;font-size:16px;">✕</button>
-  `;
-  document.body.insertBefore(banner, document.body.firstChild);
+function showLoginScreen() {
+  const s = document.getElementById('screen-login');
+  if (s) s.style.display = 'block';
+}
+
+function closeLoginScreen() {
+  const s = document.getElementById('screen-login');
+  if (s) s.style.display = 'none';
 }
 
 function updateAuthUI() {
-  const banner = document.getElementById('auth-banner');
-  if (currentUser && banner) banner.remove();
-
-  // עדכן כפתור sync
-  const syncBtn = document.querySelector('.sync-btn');
-  if (syncBtn) {
-    syncBtn.textContent = currentUser
-      ? `☁️ ${currentUser.email?.split('@')[0] || 'מחובר'}`
-      : '☁️ סנכרן';
+  const btn = document.getElementById('auth-btn');
+  if (!btn) return;
+  if (currentUser) {
+    const name = currentUser.email?.split('@')[0] || 'מחובר';
+    btn.textContent = `✓ ${name}`;
+    btn.onclick = () => { if(confirm('להתנתק?')) signOut(); };
+    closeLoginScreen();
+  } else {
+    btn.textContent = '👤 כניסה';
+    btn.onclick = () => showLoginScreen();
   }
 }
 
@@ -86,25 +71,33 @@ async function signInWithGoogle() {
   if (error) toast('שגיאה: ' + error.message);
 }
 
-async function signInWithEmailOrPassword() {
+async function doLogin() {
   if (!db) { toast('Supabase לא זמין'); return; }
-  const email    = document.getElementById('banner-email')?.value?.trim();
-  const password = document.getElementById('banner-password')?.value;
+  const email    = document.getElementById('login-email')?.value?.trim();
+  const password = document.getElementById('login-password')?.value;
+  const msg      = document.getElementById('login-msg');
   if (!email || !email.includes('@')) { toast('נא להכניס אימייל תקין'); return; }
 
   if (password) {
-    // התחברות עם סיסמה
     const { error } = await db.auth.signInWithPassword({ email, password });
-    if (error) toast('שגיאה: ' + error.message);
+    if (error) {
+      toast('שגיאה: ' + error.message);
+    } else {
+      closeLoginScreen();
+    }
   } else {
-    // Magic Link
     const { error } = await db.auth.signInWithOtp({
       email, options: { emailRedirectTo: window.location.href }
     });
-    if (error) toast('שגיאה: ' + error.message);
-    else toast('✓ נשלח קישור למייל ' + email);
+    if (error) {
+      toast('שגיאה: ' + error.message);
+    } else {
+      if (msg) { msg.textContent = '✓ נשלח קישור למייל ' + email; msg.style.display = 'block'; }
+    }
   }
 }
+
+async function signInWithEmailOrPassword() { await doLogin(); }
 
 async function signInWithEmail(email) {
   if (!db) { toast('Supabase לא זמין'); return; }
@@ -123,7 +116,7 @@ async function signOut() {
   currentUser = null;
   currentWorker = null;
   updateAuthUI();
-  showAuthBanner();
+  showLoginScreen();
   toast('התנתקת');
 }
 
@@ -211,12 +204,24 @@ async function saveWorkerToDb() {
 
   let result;
   if (currentWorker?.id) {
+    // עדכן עובדת קיימת
     result = await db.from('workers')
       .update(workerData).eq('id', currentWorker.id)
       .select().single();
+  } else if (workerData.passport) {
+    // נסה למצוא לפי דרכון קודם
+    const { data: existing } = await db.from('workers')
+      .select('id').eq('passport', workerData.passport).maybeSingle();
+    if (existing) {
+      currentWorker = existing;
+      result = await db.from('workers')
+        .update(workerData).eq('id', existing.id)
+        .select().single();
+    } else {
+      result = await db.from('workers').insert(workerData).select().single();
+    }
   } else {
-    result = await db.from('workers')
-      .insert(workerData).select().single();
+    result = await db.from('workers').insert(workerData).select().single();
   }
 
   if (result.error) {

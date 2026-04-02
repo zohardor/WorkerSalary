@@ -126,18 +126,18 @@ async function onUserLoggedIn() {
 
   toast('✓ מחובר כ-' + (currentUser.email || 'משתמש'));
 
-  // בדוק גישת פרימיום לפי מייל
-  const { data: premiumRow } = await db
-    .from('premium_access')
-    .select('plan, plan_until')
+  // בדוק פרופיל לפי מייל (יותר אמין מ-id)
+  const { data: profile } = await db
+    .from('profiles')
+    .select('*')
     .eq('email', currentUser.email)
     .maybeSingle();
 
-  if (premiumRow && (!premiumRow.plan_until || new Date(premiumRow.plan_until) > new Date())) {
-    appData.profile = { plan: premiumRow.plan };
-    localStorage.setItem('shakaron_premium', 'true');
-  } else {
-    localStorage.setItem('shakaron_premium', 'false');
+  if (profile) {
+    appData.profile = profile;
+    const isPrem = profile.plan === 'premium' && 
+      (!profile.plan_until || new Date(profile.plan_until) > new Date());
+    localStorage.setItem('shakaron_premium', isPrem ? 'true' : 'false');
   }
 
   // טען עובדת פעילה

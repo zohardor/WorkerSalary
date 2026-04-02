@@ -126,18 +126,17 @@ async function onUserLoggedIn() {
 
   toast('✓ מחובר כ-' + (currentUser.email || 'משתמש'));
 
-  // בדוק פרופיל לפי מייל (יותר אמין מ-id)
-  const { data: profile } = await db
-    .from('profiles')
-    .select('*')
-    .eq('email', currentUser.email)
-    .maybeSingle();
-
-  if (profile) {
-    appData.profile = profile;
-    const isPrem = profile.plan === 'premium' && 
-      (!profile.plan_until || new Date(profile.plan_until) > new Date());
-    localStorage.setItem('shakaron_premium', isPrem ? 'true' : 'false');
+  // קרא תוכנית מ-app_metadata (מוגדר ע"י אדמין)
+  const meta = currentUser.app_metadata || {};
+  const plan = meta.plan || 'free';
+  const planUntil = meta.plan_until ? new Date(meta.plan_until) : null;
+  const isPrem = plan === 'premium' && (!planUntil || planUntil > new Date());
+  
+  appData.profile = { plan, plan_until: meta.plan_until };
+  localStorage.setItem('shakaron_premium', isPrem ? 'true' : 'false');
+  
+  if (isPrem) {
+    toast('⭐ ברוך הבא — גרסת פרימיום פעילה!');
   }
 
   // טען עובדת פעילה

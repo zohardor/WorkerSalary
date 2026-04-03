@@ -76,7 +76,7 @@ function showScreen(id) {
   if (id === 'screen-salary')  renderMonthsList();
   if (id === 'screen-costs')   {
     if (!requirePremium('ניהול הוצאות מעסיק')) return;
-    populateRatesForm(); renderCostsScreen();
+    populateRatesForm(); renderCostsScreen(); updateHavraPreview();
   }
   if (id === 'screen-premium') renderPremiumScreen();
 }
@@ -278,6 +278,7 @@ function openMonthModal(key = null, pdfOnly = false) {
   renderCalendar();
   updateSummary();
   renderModalEmployerCosts();
+  checkHavraAlert();
 }
 
 function closeModal() {
@@ -686,7 +687,87 @@ async function syncGist() {
   }
 }
 
-// ─────────────── HELPERS ───────────────
+// ─────────────── HAVRA'A (הבראה) ───────────────
+
+// חישוב ימי הבראה לפי ותק
+function calcHavraDays(startDate) {
+  if (!startDate) return 6;
+  const start = new Date(startDate);
+  const now   = new Date();
+  const years = (now - start) / (1000 * 60 * 60 * 24 * 365.25);
+  if (years < 2) return 6;
+  if (years < 4) return 7;
+  return 8;
+}
+
+// חישוב שנות ותק כטקסט
+function calcSeniorityText(startDate) {
+  if (!startDate) return '—';
+  const start = new Date(startDate);
+  const now   = new Date();
+  const months = Math.floor((now - start) / (1000 * 60 * 60 * 24 * 30.44));
+  const years  = Math.floor(months / 12);
+  const rem    = months % 12;
+  if (years === 0) return `${rem} חודשים`;
+  if (rem === 0)   return `${years} שנים`;
+  return `${years} שנים ו-${rem} חודשים`;
+}
+
+// עדכן תצוגת הבראה בכרטיס הגדרות
+function updateHavraPreview() {
+  const rate      = parseFloat(v('r-havra-rate')) || 0;
+  const startDate = appData.worker?.startDate;
+
+  // סכומים לפי ותק
+  setText('havra-y1', `₪${(6 * rate).toLocaleString()}`);
+  setText('havra-y2', `₪${(7 * rate).toLocaleString()}`);
+  setText('havra-y3', `₪${(8 * rate).toLocaleString()}`);
+
+  // ותק נוכחי
+  const days = calcHavraDays(startDate);
+  const amt  = days * rate;
+  setText('havra-seniority-days', `${days} ימים`);
+  setText('havra-current', `₪${amt.toLocaleString()}`);
+  setText('havra-start-disp', startDate || '—');
+  setText('havra-years-disp', calcSeniorityText(startDate));
+}
+
+// בדוק אם החודש הנוכחי הוא חודש הבראה והצג התראה
+function checkHavraAlert() {
+  const monthKey = v('m-month');
+  if (!monthKey) return;
+  const [, mo] = monthKey.split('-').map(Number);
+  const havraMonth = parseInt(appData.rates?.havraMonth || '7');
+  const alert = document.getElementById('havra-alert');
+  if (!alert) return;
+
+  if (mo === havraMonth) {
+    const rate  = appData.rates?.havraRate || 378;
+    const days  = calcHavraDays(appData.worker?.startDate);
+    const total = days * rate;
+    setText('havra-alert-text',
+      `לפי ותק של ${calcSeniorityText(appData.worker?.startDate)} — ${days} ימי הבראה × ₪${rate} = ₪${total.toLocaleString()}`
+    );
+    alert.style.display = 'block';
+  } else {
+    alert.style.display = 'none';
+  }
+}
+
+// הוסף הבראה לשדה ה-notes ולסכום החודשי
+function addHavraToMonth() {
+  const rate  = appData.rates?.havraRate || 378;
+  const days  = calcHavraDays(appData.worker?.startDate);
+  const total = days * rate;
+  const notes = v('m-notes');
+  setV('m-notes', (notes ? notes + ' | ' : '') + `הבראה ${days} ימים ₪${total.toLocaleString()}`);
+  const expenses = parseFloat(v('m-expenses')) || 0;
+  setV('m-expenses', expenses + total);
+  updateSummary();
+  renderModalEmployerCosts();
+  toast(`✓ הבראה ₪${total.toLocaleString()} נוספה להחזר הוצאות`);
+  document.getElementById('havra-alert').style.display = 'none';
+}
 function v(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 function setV(id, val) { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; }
 function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
@@ -861,24 +942,19 @@ function saveRates() {
 
 function populateRatesForm() {
   const r = appData.rates || {};
-  setV('r-bituach',    r.bituach);
-  setV('r-pension',    r.pension);
-  setV('r-havra-days', r.havraDays);
-  setV('r-havra-rate', r.havraRate);
-
-  const annual  = (r.havraDays||0) * (r.havraRate||0);
-  const monthly = annual / 12;
-  setText('havra-annual-disp',  annual.toFixed(0));
-  setText('havra-monthly-disp', monthly.toFixed(2));
+  setV('r-bituach',     r.bituach);
+  setV('r-pension',     r.pension);
+  setV('r-havra-rate',  r.havraRate);
+  setV('r-havra-month', r.havraMonth || '7');
+  updateHavraPreview();
 }
 
-// חשב הוצאות מעסיק לחודש בודד לפי שכר ברוטו
 function calcEmployerCosts(grossSalary) {
   const r = appData.rates || {};
-  const bituach     = (grossSalary * (r.bituach || 0)) / 100;
-  const pension     = (grossSalary * (r.pension  || 0)) / 100;
-  const havraMonthly = r.havraMonthly || 0;
-  const total       = bituach + pension + havraMonthly;
+  const bituach      = (grossSalary * (r.bituach || 0)) / 100;
+  const pension      = (grossSalary * (r.pension  || 0)) / 100;
+  const havraMonthly = ((r.havraRate || 0) * calcHavraDays(appData.worker?.startDate)) / 12;
+  const total        = bituach + pension + havraMonthly;
   return { bituach, pension, havraMonthly, total };
 }
 

@@ -818,24 +818,58 @@
       <div class="form-grid">
         <div class="form-group">
           <label>ביטוח לאומי – חלק מעסיק (%)</label>
-          <input type="number" id="r-bituach" placeholder="3.55" step="0.01" oninput="saveRatesToDb()" />
+          <input type="number" id="r-bituach" placeholder="3.55" step="0.01" />
         </div>
         <div class="form-group">
           <label>פנסיה / קרן השתלמות – מעסיק (%)</label>
-          <input type="number" id="r-pension" placeholder="6" step="0.01" oninput="saveRatesToDb()" />
-        </div>
-        <div class="form-group">
-          <label>ימי הבראה שנתיים (ימים/שנה)</label>
-          <input type="number" id="r-havra-days" placeholder="6" step="1" oninput="saveRatesToDb()" />
+          <input type="number" id="r-pension" placeholder="6" step="0.01" />
         </div>
         <div class="form-group">
           <label>תעריף יום הבראה (₪)</label>
-          <input type="number" id="r-havra-rate" placeholder="378" step="1" oninput="saveRatesToDb()" />
+          <input type="number" id="r-havra-rate" placeholder="378" step="1" oninput="updateHavraPreview()" />
+        </div>
+        <div class="form-group">
+          <label>חודש תשלום הבראה</label>
+          <select id="r-havra-month" onchange="updateHavraPreview()">
+            <option value="7">יולי</option>
+            <option value="8">אוגוסט</option>
+            <option value="6">יוני</option>
+            <option value="9">ספטמבר</option>
+          </select>
         </div>
       </div>
-      <div style="margin-top:12px;background:var(--surface2);border-radius:8px;padding:12px;font-size:13px;color:var(--text2);">
-        💡 הבראה מחושבת כסכום שנתי (<span id="havra-annual-disp">0</span> ₪/שנה) ומחולק ל-12 חודשים = <strong id="havra-monthly-disp" style="color:var(--accent)">0</strong> ₪/חודש
+
+      <!-- הבראה לפי ותק -->
+      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+        <div style="font-size:13px;font-weight:700;color:var(--warn);margin-bottom:10px;">🌴 הבראה לפי ותק (חישוב אוטומטי)</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--surface);border-radius:8px;padding:8px;text-align:center;">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px;">שנה 1</div>
+            <div style="font-weight:700;color:var(--text);">6 ימים</div>
+            <div id="havra-y1" style="font-size:12px;color:var(--warn);">₪0</div>
+          </div>
+          <div style="background:var(--surface);border-radius:8px;padding:8px;text-align:center;">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px;">שנה 2–3</div>
+            <div style="font-weight:700;color:var(--text);">7 ימים</div>
+            <div id="havra-y2" style="font-size:12px;color:var(--warn);">₪0</div>
+          </div>
+          <div style="background:var(--surface);border-radius:8px;padding:8px;text-align:center;">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px;">שנה 4+</div>
+            <div style="font-weight:700;color:var(--text);">8 ימים</div>
+            <div id="havra-y3" style="font-size:12px;color:var(--warn);">₪0</div>
+          </div>
+          <div style="background:var(--surface);border-radius:8px;padding:8px;text-align:center;border:1px solid var(--warn);">
+            <div style="font-size:10px;color:var(--text3);margin-bottom:2px;">ותק נוכחי</div>
+            <div id="havra-seniority-days" style="font-weight:900;color:var(--warn);font-size:16px;">—</div>
+            <div id="havra-current" style="font-size:12px;color:var(--warn);">₪0</div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text3);">
+          💡 תאריך תחילת העבודה: <strong id="havra-start-disp" style="color:var(--text2);">—</strong> |
+          ותק: <strong id="havra-years-disp" style="color:var(--accent);">—</strong>
+        </div>
       </div>
+
       <div style="margin-top:14px;display:flex;gap:10px;align-items:center;">
         <button class="btn btn-primary" onclick="saveRatesToDb()">💾 שמור הגדרות</button>
         <span id="rates-save-msg" style="font-size:13px;color:var(--success);display:none;">✓ נשמר בהצלחה</span>
@@ -1269,7 +1303,7 @@
     <div class="form-grid" style="margin-bottom:20px;">
       <div class="form-group">
         <label>חודש ושנה</label>
-        <input type="month" id="m-month" onchange="renderCalendar()" />
+        <input type="month" id="m-month" onchange="renderCalendar(); checkHavraAlert();" />
       </div>
       <div class="form-group">
         <label>שכר בסיס ברוטו (₪)</label>
@@ -1293,6 +1327,15 @@
     <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;">
       <div style="font-size:13px;font-weight:700;color:var(--warn);margin-bottom:10px;">💼 הוצאות מעסיק – חישוב אוטומטי</div>
       <div id="modal-employer-costs" style="font-size:13px;color:var(--text2);">הזן שכר בסיס כדי לחשב</div>
+    </div>
+
+    <!-- התראת הבראה -->
+    <div id="havra-alert" style="display:none;background:rgba(251,191,36,0.1);border:1px solid var(--warn);border-radius:10px;padding:14px;margin-bottom:16px;">
+      <div style="font-size:13px;font-weight:700;color:var(--warn);margin-bottom:6px;">🌴 חודש הבראה!</div>
+      <div id="havra-alert-text" style="font-size:13px;color:var(--text2);margin-bottom:10px;"></div>
+      <button class="btn btn-sm" style="background:rgba(251,191,36,0.2);border:1px solid var(--warn);color:var(--warn);" onclick="addHavraToMonth()">
+        ➕ הוסף הבראה לחשבון החודשי
+      </button>
     </div>
 
     <!-- Calendar -->

@@ -256,18 +256,20 @@ async function saveRatesToDb() {
     havraAnnual,
   };
 
-  const annual  = havraAnnual;
-  const monthly = annual / 12;
   const txtAnnual  = document.getElementById('havra-annual-disp');
   const txtMonthly = document.getElementById('havra-monthly-disp');
-  if (txtAnnual)  txtAnnual.textContent  = annual.toFixed(0);
-  if (txtMonthly) txtMonthly.textContent = monthly.toFixed(2);
+  if (txtAnnual)  txtAnnual.textContent  = havraAnnual.toFixed(0);
+  if (txtMonthly) txtMonthly.textContent = (havraAnnual/12).toFixed(2);
 
   saveLocal();
-  renderCostsScreen();
-  renderModalEmployerCosts();
+  if (typeof renderCostsScreen === 'function') renderCostsScreen();
+  if (typeof renderModalEmployerCosts === 'function') renderModalEmployerCosts();
 
-  if (!db || !currentUser || !currentWorker?.id) return;
+  // שמור ב-DB
+  if (!db || !currentWorker?.id) {
+    toast('⚠️ אין חיבור לענן — נשמר מקומית');
+    return;
+  }
 
   const { error } = await db.from('rates').upsert({
     worker_id:  currentWorker.id,
@@ -277,7 +279,14 @@ async function saveRatesToDb() {
     havra_rate: havraRate,
   }, { onConflict: 'worker_id' });
 
-  if (error) console.error('Rates save error:', error);
+  const msg = document.getElementById('rates-save-msg');
+  if (error) {
+    console.error('Rates save error:', error);
+    toast('⚠️ שגיאת שמירה: ' + error.message);
+  } else {
+    toast('✓ הגדרות נשמרו');
+    if (msg) { msg.style.display = 'inline'; setTimeout(() => msg.style.display = 'none', 3000); }
+  }
 }
 
 // ── MONTHS ────────────────────────────────────────────────────

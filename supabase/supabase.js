@@ -251,9 +251,11 @@ async function saveRatesToDb() {
   appData.rates = {
     bituach: parseFloat(v('r-bituach')) || 0,
     pension: parseFloat(v('r-pension')) || 0,
-    havraDays, havraRate,
-    havraMonthly: havraAnnual / 12,
-    havraAnnual,
+    havraDays: calcHavraDays(appData.worker?.startDate),
+    havraRate: parseFloat(v('r-havra-rate')) || 0,
+    havraMonth: v('r-havra-month') || '7',
+    havraMonthly: 0, // לא משתמשים יותר בחלוקה חודשית
+    havraAnnual: calcHavraDays(appData.worker?.startDate) * (parseFloat(v('r-havra-rate')) || 0),
   };
 
   const txtAnnual  = document.getElementById('havra-annual-disp');

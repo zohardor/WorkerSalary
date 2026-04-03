@@ -590,6 +590,7 @@
     <button class="nav-tab" onclick="showScreen('screen-premium')" style="color:var(--warn);">⭐ פרימיום</button>
   </div>
   <button class="sync-btn" id="auth-btn" onclick="showScreen('screen-login')" title="התחברות">👤 כניסה</button>
+  <button class="sync-btn" onclick="syncAllToDb()" title="שמור הכל לענן" style="margin-right:4px;">☁️ שמור</button>
 </div>
 
 <div class="main">
@@ -834,6 +835,10 @@
       </div>
       <div style="margin-top:12px;background:var(--surface2);border-radius:8px;padding:12px;font-size:13px;color:var(--text2);">
         💡 הבראה מחושבת כסכום שנתי (<span id="havra-annual-disp">0</span> ₪/שנה) ומחולק ל-12 חודשים = <strong id="havra-monthly-disp" style="color:var(--accent)">0</strong> ₪/חודש
+      </div>
+      <div style="margin-top:14px;display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-primary" onclick="saveRatesToDb()">💾 שמור הגדרות</button>
+        <span id="rates-save-msg" style="font-size:13px;color:var(--success);display:none;">✓ נשמר בהצלחה</span>
       </div>
     </div>
 

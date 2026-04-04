@@ -768,6 +768,168 @@ function addHavraToMonth() {
   toast(`✓ הבראה ₪${total.toLocaleString()} נוספה להחזר הוצאות`);
   document.getElementById('havra-alert').style.display = 'none';
 }
+// ─────────────── TERMINATION REPORT (דוח סיום) ───────────────
+
+function calcTermination() {
+  const endDate   = v('term-end-date');
+  const salary    = parseFloat(v('term-salary')) || 0;
+  const unusedVac = parseInt(v('term-unused-vac')) || 0;
+  const reason    = v('term-reason');
+  const startDate = appData.worker?.startDate;
+
+  if (!endDate || !salary || !startDate) return;
+
+  const start  = new Date(startDate);
+  const end    = new Date(endDate);
+  const msYear = 1000 * 60 * 60 * 24 * 365.25;
+  const years  = (end - start) / msYear;
+
+  if (years < 0) { toast('תאריך סיום לפני תאריך התחלה'); return; }
+
+  const dailySalary = salary / 25;
+  const rows = [];
+  let total  = 0;
+
+  // 1. פיצויי פיטורים (רק בפיטורים / הסכמה)
+  if (reason !== 'resigned') {
+    const severance = salary * years;
+    rows.push({ label: `פיצויי פיטורים (${years.toFixed(2)} שנים × ₪${salary.toLocaleString()})`, amount: severance, color: 'var(--danger)' });
+    total += severance;
+  }
+
+  // 2. הודעה מוקדמת
+  const noticeMonths = Math.min(Math.floor(years), 6);
+  if (noticeMonths > 0) {
+    const noticePay = salary * noticeMonths / 12 * 12;
+    rows.push({ label: `הודעה מוקדמת (${noticeMonths} חודשים)`, amount: salary * noticeMonths, color: 'var(--warn)' });
+    total += salary * noticeMonths;
+  }
+
+  // 3. פדיון חופשה
+  if (unusedVac > 0) {
+    const vacPay = dailySalary * unusedVac;
+    rows.push({ label: `פדיון חופשה (${unusedVac} ימים × ₪${dailySalary.toFixed(0)})`, amount: vacPay, color: 'var(--success)' });
+    total += vacPay;
+  }
+
+  // 4. הבראה יחסית לשנה האחרונה
+  const lastYearFraction = years - Math.floor(years);
+  if (lastYearFraction > 0) {
+    const havraRate = appData.rates?.havraRate || 378;
+    const havraDays = calcHavraDays(startDate);
+    const havraPro  = havraRate * havraDays * lastYearFraction;
+    rows.push({ label: `הבראה יחסית (${(lastYearFraction * 12).toFixed(1)} חודשים)`, amount: havraPro, color: 'var(--holiday)' });
+    total += havraPro;
+  }
+
+  // 5. שכר חלקי לחודש האחרון
+  const lastMonthDays = end.getDate();
+  const daysInMonth   = new Date(end.getFullYear(), end.getMonth()+1, 0).getDate();
+  if (lastMonthDays < daysInMonth) {
+    const partialSalary = (salary / daysInMonth) * lastMonthDays;
+    rows.push({ label: `שכר חלקי (${lastMonthDays}/${daysInMonth} ימים)`, amount: partialSalary, color: 'var(--accent)' });
+    total += partialSalary;
+  }
+
+  const rowsHtml = rows.map(r => `
+    <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:13px;color:var(--text2);">${r.label}</span>
+      <span style="font-weight:700;color:${r.color};">₪${r.amount.toLocaleString('he-IL',{maximumFractionDigits:0})}</span>
+    </div>`).join('');
+
+  document.getElementById('term-rows').innerHTML = rowsHtml;
+  setText('term-total', '₪' + total.toLocaleString('he-IL', {maximumFractionDigits:0}));
+  document.getElementById('termination-result').style.display = 'block';
+  document.getElementById('termination-placeholder').style.display = 'none';
+  window._termData = { rows, total, years, startDate, endDate, reason, salary };
+}
+
+function generateTerminationPDF() {
+  const d = window._termData;
+  if (!d) { toast('חשב קודם את הסיום'); return; }
+  const w = appData.worker;
+  const reasonText = { fired:'פיטורים', resigned:'התפטרות', mutual:'הסכמה הדדית' }[d.reason] || '';
+
+  const rowsHtml = d.rows.map(r => `
+    <tr>
+      <td style="padding:8px;border-bottom:1px solid #eee;">${r.label}</td>
+      <td style="padding:8px;border-bottom:1px solid #eee;text-align:left;font-weight:600;">
+        ₪${r.amount.toLocaleString('he-IL',{maximumFractionDigits:0})}
+      </td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head><meta charset="UTF-8"/>
+<title>דוח סיום – ${w?.name||'עובדת'}</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;700;900&display=swap" rel="stylesheet"/>
+<style>
+  body{font-family:'Heebo',sans-serif;direction:rtl;padding:40px;max-width:680px;margin:0 auto;color:#111;}
+  h1{font-size:24px;font-weight:900;color:#1a1f2e;margin-bottom:4px;}
+  .sub{color:#e11d48;font-size:15px;font-weight:700;margin-bottom:24px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px;}
+  .box{background:#f8faff;border:1px solid #e5e7eb;border-radius:8px;padding:14px;}
+  .box-title{font-size:11px;color:#888;font-weight:700;margin-bottom:6px;}
+  table{width:100%;border-collapse:collapse;margin-bottom:24px;}
+  th{background:#f1f5f9;padding:10px 8px;text-align:right;font-size:12px;color:#555;}
+  .total-row td{border-top:3px solid #e11d48;font-size:16px;font-weight:900;color:#e11d48;padding-top:12px;}
+  .sig{margin-top:48px;display:grid;grid-template-columns:1fr 1fr;gap:48px;}
+  .sig-box{border-top:2px solid #333;padding-top:10px;font-size:12px;color:#555;text-align:center;}
+  .footer{text-align:center;font-size:10px;color:#aaa;margin-top:24px;border-top:1px solid #eee;padding-top:12px;}
+  .print-btn{display:block;margin:0 auto 24px;padding:10px 28px;background:#e11d48;color:#fff;border:none;border-radius:8px;font-size:15px;font-family:'Heebo',sans-serif;font-weight:700;cursor:pointer;}
+  @media print{.print-btn{display:none}@page{size:A4;margin:15mm}}
+</style>
+</head>
+<body>
+<button class="print-btn" onclick="window.print()">🖨️ הדפס / שמור PDF</button>
+<h1>דוח סיום התקשרות</h1>
+<div class="sub">שכרון ✦ — ${new Date().toLocaleDateString('he-IL')}</div>
+<div class="grid">
+  <div class="box">
+    <div class="box-title">פרטי עובדת</div>
+    <div style="font-size:15px;font-weight:700;">${w?.name||'—'}</div>
+    <div style="font-size:13px;color:#555;margin-top:4px;">דרכון: ${w?.passport||'—'}</div>
+    <div style="font-size:13px;color:#555;">תחילת עבודה: ${d.startDate||'—'}</div>
+    <div style="font-size:13px;color:#555;">סיום עבודה: ${d.endDate}</div>
+  </div>
+  <div class="box">
+    <div class="box-title">פרטי סיום</div>
+    <div style="font-size:15px;font-weight:700;color:#e11d48;">${reasonText}</div>
+    <div style="font-size:13px;color:#555;margin-top:4px;">ותק: ${d.years.toFixed(2)} שנים</div>
+    <div style="font-size:13px;color:#555;">שכר אחרון: ₪${Number(d.salary).toLocaleString()}</div>
+  </div>
+</div>
+<table>
+  <thead><tr><th>פירוט</th><th style="text-align:left;">סכום</th></tr></thead>
+  <tbody>
+    ${rowsHtml}
+    <tr class="total-row">
+      <td style="padding:12px 8px;">סה"כ לתשלום</td>
+      <td style="padding:12px 8px;text-align:left;">₪${d.total.toLocaleString('he-IL',{maximumFractionDigits:0})}</td>
+    </tr>
+  </tbody>
+</table>
+<div class="sig">
+  <div class="sig-box"><div>חתימת המעסיק</div><br/><br/><div>תאריך: ___________</div></div>
+  <div class="sig-box"><div>חתימת העובדת</div><br/><br/><div>קיבלתי את מלוא הסכום המגיע לי</div></div>
+</div>
+<div class="footer">הופק ע"י שכרון ✦ • ${new Date().toLocaleDateString('he-IL')} • אינו מהווה ייעוץ משפטי</div>
+</body></html>`;
+
+  const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+  const url  = URL.createObjectURL(blob);
+  const win  = window.open(url, '_blank');
+  if (!win) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `סיום_${w?.name||'עובדת'}_${d.endDate}.html`;
+    a.click();
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+  toast('דוח סיום נפתח – לחץ הדפס לשמירת PDF');
+}
+
+// ─────────────── HELPERS ───────────────
 function v(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 function setV(id, val) { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; }
 function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }

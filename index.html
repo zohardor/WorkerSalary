@@ -884,6 +884,55 @@
       </div>
     </div>
 
+    <!-- דוח סיום התקשרות -->
+    <div class="card" style="border-color:rgba(248,113,113,0.3);">
+      <div class="card-title"><span class="icon">🏁</span> דוח סיום התקשרות</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">חישוב אוטומטי של כל הזכויות המגיעות לעובדת בסיום</div>
+
+      <div class="form-grid" style="margin-bottom:16px;">
+        <div class="form-group">
+          <label>תאריך סיום העסקה</label>
+          <input type="date" id="term-end-date" oninput="calcTermination()" />
+        </div>
+        <div class="form-group">
+          <label>סיבת סיום</label>
+          <select id="term-reason" onchange="calcTermination()">
+            <option value="fired">פיטורים</option>
+            <option value="resigned">התפטרות</option>
+            <option value="mutual">הסכמה הדדית</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>שכר אחרון (₪)</label>
+          <input type="number" id="term-salary" placeholder="שכר בסיס" oninput="calcTermination()" />
+        </div>
+        <div class="form-group">
+          <label>ימי חופשה שלא נוצלו</label>
+          <input type="number" id="term-unused-vac" placeholder="0" value="0" oninput="calcTermination()" />
+        </div>
+      </div>
+
+      <!-- תוצאות -->
+      <div id="termination-result" style="display:none;">
+        <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
+          <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text);">📊 פירוט תשלומי סיום</div>
+          <div id="term-rows"></div>
+          <div style="border-top:2px solid var(--danger);margin-top:12px;padding-top:12px;display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;font-size:15px;">סה"כ לתשלום:</span>
+            <span id="term-total" style="font-size:22px;font-weight:900;color:var(--danger);">₪0</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="generateTerminationPDF()">📄 דוח PDF לחתימה</button>
+          <button class="btn btn-outline" onclick="document.getElementById('termination-result').style.display='none'">סגור</button>
+        </div>
+      </div>
+
+      <div id="termination-placeholder" style="color:var(--text3);font-size:13px;">
+        מלא את תאריך הסיום ושכר אחרון לחישוב אוטומטי
+      </div>
+    </div>
+
   </div>
 
   <!-- ══════════════ SCREEN 4: GUIDE ══════════════ -->

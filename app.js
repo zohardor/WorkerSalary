@@ -74,7 +74,8 @@ function showScreen(id) {
   const idx = ['screen-guide','screen-worker','screen-salary','screen-costs','screen-premium'].indexOf(id);
   document.querySelectorAll('.nav-tab')[idx].classList.add('active');
   if (id === 'screen-salary')  renderMonthsList();
-  if (id === 'screen-guide') setTimeout(initAccordion, 50);
+  if (id === 'screen-guide')   setTimeout(initAccordion, 50);
+  if (id === 'screen-costs')   {
     if (!requirePremium('ניהול הוצאות מעסיק')) return;
     populateRatesForm(); renderCostsScreen(); updateHavraPreview();
   }

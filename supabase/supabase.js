@@ -1,38 +1,36 @@
 // supabase.js – חיבור שכרון ל-Supabase
-// עובד גם בלי התחברות (localStorage fallback)
 
 const SUPABASE_URL  = 'https://ndnucfbchdxyhvpazxwe.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5kbnVjZmJjaGR4eWh2cGF6eHdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ4NTAzNDAsImV4cCI6MjA5MDQyNjM0MH0.tuEpBl64HUvIU_f8u_N4DX-s8m40piHsTcv0QWITViU';
 
-// ── INIT ─────────────────────────────────────────────────────
 let db = null;
 let currentUser   = null;
 let currentWorker = null;
 
-// אתחול אחרי שה-DOM מוכן
+// toast בטוח — app.js נטען אחרי supabase.js
+function safeToast(msg) {
+  if (typeof toast === 'function') toast(msg);
+  else setTimeout(() => { if (typeof toast === 'function') toast(msg); }, 600);
+}
+
+// ── INIT ─────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   try {
     const { createClient } = window.supabase;
     db = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-    // האזנה לשינויי auth
     db.auth.onAuthStateChange(async (event, session) => {
       currentUser = session?.user ?? null;
       updateAuthUI();
-      if (currentUser) {
-        await onUserLoggedIn();
-      }
+      if (currentUser) await onUserLoggedIn();
     });
 
-    // בדוק אם יש session קיים
     db.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        showLoginScreen(); // הצג banner קטן, לא חוסם
-      }
+      if (!session) showLoginScreen();
     });
 
   } catch(e) {
-    console.warn('Supabase init failed, using localStorage only:', e);
+    console.warn('Supabase init failed:', e);
   }
 });
 
@@ -53,7 +51,7 @@ function updateAuthUI() {
   if (currentUser) {
     const name = currentUser.email?.split('@')[0] || 'מחובר';
     btn.textContent = `✓ ${name}`;
-    btn.onclick = () => { if(confirm('להתנתק?')) signOut(); };
+    btn.onclick = () => { if (confirm('להתנתק?')) signOut(); };
     closeLoginScreen();
   } else {
     btn.textContent = '👤 כניסה';
@@ -65,10 +63,7 @@ function updateAuthUI() {
 async function signInWithGoogle() {
   if (!db) { safeToast('Supabase לא זמין'); return; }
   const redirectTo = window.location.origin + window.location.pathname;
-  const { error } = await db.auth.signInWithOAuth({
-    provider: 'google',
-    options: { redirectTo }
-  });
+  const { error } = await db.auth.signInWithOAuth({ provider: 'google', options: { redirectTo } });
   if (error) safeToast('שגיאה: ' + error.message);
 }
 
@@ -81,20 +76,12 @@ async function doLogin() {
 
   if (password) {
     const { error } = await db.auth.signInWithPassword({ email, password });
-    if (error) {
-      safeToast('שגיאה: ' + error.message);
-    } else {
-      closeLoginScreen();
-    }
+    if (error) safeToast('שגיאה: ' + error.message);
+    else closeLoginScreen();
   } else {
-    const { error } = await db.auth.signInWithOtp({
-      email, options: { emailRedirectTo: window.location.href }
-    });
-    if (error) {
-      safeToast('שגיאה: ' + error.message);
-    } else {
-      if (msg) { msg.textContent = '✓ נשלח קישור למייל ' + email; msg.style.display = 'block'; }
-    }
+    const { error } = await db.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
+    if (error) safeToast('שגיאה: ' + error.message);
+    else if (msg) { msg.textContent = '✓ נשלח קישור למייל ' + email; msg.style.display = 'block'; }
   }
 }
 
@@ -102,11 +89,8 @@ async function signInWithEmailOrPassword() { await doLogin(); }
 
 async function signInWithEmail(email) {
   if (!db) { safeToast('Supabase לא זמין'); return; }
-  if (!email || !email.includes('@')) { safeToast('נא להכניס אימייל תקין'); return; }
-  const { error } = await db.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: window.location.href }
-  });
+  if (!email?.includes('@')) { safeToast('נא להכניס אימייל תקין'); return; }
+  const { error } = await db.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.href } });
   if (error) safeToast('שגיאה: ' + error.message);
   else safeToast('✓ נשלח קישור למייל ' + email);
 }
@@ -117,7 +101,7 @@ async function signOut() {
   currentUser = null;
   currentWorker = null;
   localStorage.removeItem('shakaron_premium');
-  appData.profile = null;
+  if (typeof appData !== 'undefined') appData.profile = null;
   updateAuthUI();
   showLoginScreen();
   safeToast('התנתקת בהצלחה');
@@ -129,56 +113,66 @@ async function onUserLoggedIn() {
 
   safeToast('✓ מחובר כ-' + (currentUser.email || 'משתמש'));
 
-  // קרא תוכנית מ-app_metadata (מוגדר ע"י אדמין)
-  const meta = currentUser.app_metadata || {};
-  const plan = meta.plan || 'free';
-  const planUntil = meta.plan_until ? new Date(meta.plan_until) : null;
-  const isPrem = plan === 'premium' && (!planUntil || planUntil > new Date());
+  // בדוק פרימיום מ-app_metadata
+  const meta     = currentUser.app_metadata || {};
+  const plan     = meta.plan || 'free';
+  const until    = meta.plan_until ? new Date(meta.plan_until) : null;
+  const isPrem   = plan === 'premium' && (!until || until > new Date());
 
-  // בדוק גם ב-profiles כ-fallback
-  if (!isPrem && db) {
-    const { data: profile } = await db
-      .from('profiles').select('plan, plan_until')
-      .eq('email', currentUser.email).maybeSingle();
-    if (profile?.plan === 'premium') {
-      const profileUntil = profile.plan_until ? new Date(profile.plan_until) : null;
-      if (!profileUntil || profileUntil > new Date()) {
-        appData.profile = profile;
-        localStorage.setItem('shakaron_premium', 'true');
-        if (typeof applyPlanGates === 'function') applyPlanGates();
-        safeToast('⭐ ברוך הבא — גרסת פרימיום פעילה!');
-        return;
-      }
-    }
-  }
-
-  appData.profile = { plan, plan_until: meta.plan_until };
   localStorage.setItem('shakaron_premium', isPrem ? 'true' : 'false');
-  if (isPrem) safeToast('⭐ ברוך הבא — גרסת פרימיום פעילה!');
+  if (typeof appData !== 'undefined') appData.profile = { plan, plan_until: meta.plan_until };
 
-  // טען עובדת פעילה
-  const { data: workers } = await db
-    .from('workers').select('*')
-    .eq('user_id', currentUser.id)
-    .eq('is_active', true)
-    .order('created_at', { ascending: false })
-    .limit(1);
-
-  if (workers && workers.length > 0) {
-    currentWorker = workers[0];
-    await loadWorkerData(currentWorker.id);
+  if (isPrem) {
+    safeToast('⭐ פרימיום פעיל!');
+    setTimeout(() => { if (typeof applyPlanGates === 'function') applyPlanGates(); }, 300);
+  } else {
+    // fallback — בדוק טבלת profiles
+    try {
+      const { data: profile } = await db
+        .from('profiles').select('plan, plan_until')
+        .eq('email', currentUser.email).maybeSingle();
+      if (profile?.plan === 'premium') {
+        const pUntil = profile.plan_until ? new Date(profile.plan_until) : null;
+        if (!pUntil || pUntil > new Date()) {
+          localStorage.setItem('shakaron_premium', 'true');
+          if (typeof appData !== 'undefined') appData.profile = profile;
+          safeToast('⭐ פרימיום פעיל!');
+          setTimeout(() => { if (typeof applyPlanGates === 'function') applyPlanGates(); }, 300);
+        }
+      }
+    } catch(e) { console.log('profiles check skipped:', e.message); }
   }
 
-  if (typeof applyPlanGates === 'function') applyPlanGates();
-  updateWorkerStats();
-  updateVacBar();
-  renderMonthsList();
-  populateWorkerForm();
+  // טען עובדת
+  try {
+    const { data: workers, error: wErr } = await db
+      .from('workers').select('*')
+      .eq('user_id', currentUser.id)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (wErr) console.error('Worker load error:', wErr.message);
+
+    if (workers?.length > 0) {
+      currentWorker = workers[0];
+      await loadWorkerData(currentWorker.id);
+      console.log('✓ Worker loaded:', currentWorker.name);
+    } else {
+      console.log('No active worker found for user:', currentUser.id);
+    }
+  } catch(e) { console.error('Worker load exception:', e.message); }
+
+  setTimeout(() => {
+    if (typeof updateWorkerStats === 'function') updateWorkerStats();
+    if (typeof updateVacBar === 'function') updateVacBar();
+    if (typeof renderMonthsList === 'function') renderMonthsList();
+    if (typeof populateWorkerForm === 'function') populateWorkerForm();
+  }, 200);
 }
 
 // ── WORKER ────────────────────────────────────────────────────
 async function saveWorkerToDb() {
-  // שמור מקומית תמיד — מיידי
   appData.worker = {
     name:         v('w-name'),
     passport:     v('w-passport'),
@@ -197,7 +191,6 @@ async function saveWorkerToDb() {
   updateWorkerStats();
   updateVacBar();
 
-  // שמור ב-DB (עם או בלי auth)
   if (!db) return;
 
   const workerData = {
@@ -214,25 +207,16 @@ async function saveWorkerToDb() {
     hol_total:     appData.worker.holTotal,
     sick_total:    appData.worker.sickTotal,
   };
-
-  // הוסף user_id רק אם מחובר
   if (currentUser?.id) workerData.user_id = currentUser.id;
 
   let result;
   if (currentWorker?.id) {
-    // עדכן עובדת קיימת
-    result = await db.from('workers')
-      .update(workerData).eq('id', currentWorker.id)
-      .select().single();
+    result = await db.from('workers').update(workerData).eq('id', currentWorker.id).select().single();
   } else if (workerData.passport) {
-    // נסה למצוא לפי דרכון קודם
-    const { data: existing } = await db.from('workers')
-      .select('id').eq('passport', workerData.passport).maybeSingle();
+    const { data: existing } = await db.from('workers').select('id').eq('passport', workerData.passport).maybeSingle();
     if (existing) {
       currentWorker = existing;
-      result = await db.from('workers')
-        .update(workerData).eq('id', existing.id)
-        .select().single();
+      result = await db.from('workers').update(workerData).eq('id', existing.id).select().single();
     } else {
       result = await db.from('workers').insert(workerData).select().single();
     }
@@ -240,13 +224,8 @@ async function saveWorkerToDb() {
     result = await db.from('workers').insert(workerData).select().single();
   }
 
-  if (result.error) {
-    console.error('Worker save error:', result.error.message, result.error.details);
-    safeToast('⚠️ ' + result.error.message);
-    return;
-  }
-  currentWorker = result.data;
-  console.log('✓ Worker saved to DB:', currentWorker.id);
+  if (result?.error) { console.error('Worker save error:', result.error.message); return; }
+  if (result?.data) currentWorker = result.data;
 }
 
 function workerFromDb(row) {
@@ -261,32 +240,24 @@ function workerFromDb(row) {
 
 // ── RATES ─────────────────────────────────────────────────────
 async function saveRatesToDb() {
-  const havraDays   = parseFloat(v('r-havra-days')) || 0;
   const havraRate   = parseFloat(v('r-havra-rate')) || 0;
-  const havraAnnual = havraDays * havraRate;
+  const havraDays   = (typeof calcHavraDays === 'function') ? calcHavraDays(appData.worker?.startDate) : 6;
 
   appData.rates = {
-    bituach: parseFloat(v('r-bituach')) || 0,
-    pension: parseFloat(v('r-pension')) || 0,
-    havraDays: calcHavraDays(appData.worker?.startDate),
-    havraRate: parseFloat(v('r-havra-rate')) || 0,
-    havraMonth: v('r-havra-month') || '7',
-    havraMonthly: 0, // לא משתמשים יותר בחלוקה חודשית
-    havraAnnual: calcHavraDays(appData.worker?.startDate) * (parseFloat(v('r-havra-rate')) || 0),
+    bituach:    parseFloat(v('r-bituach'))    || 0,
+    pension:    parseFloat(v('r-pension'))    || 0,
+    havraDays,  havraRate,
+    havraMonth: v('r-havra-month')            || '7',
+    havraMonthly: (havraDays * havraRate) / 12,
+    havraAnnual:   havraDays * havraRate,
   };
-
-  const txtAnnual  = document.getElementById('havra-annual-disp');
-  const txtMonthly = document.getElementById('havra-monthly-disp');
-  if (txtAnnual)  txtAnnual.textContent  = havraAnnual.toFixed(0);
-  if (txtMonthly) txtMonthly.textContent = (havraAnnual/12).toFixed(2);
 
   saveLocal();
   if (typeof renderCostsScreen === 'function') renderCostsScreen();
   if (typeof renderModalEmployerCosts === 'function') renderModalEmployerCosts();
 
-  // שמור ב-DB
   if (!db || !currentWorker?.id) {
-    safeToast('⚠️ אין חיבור לענן — נשמר מקומית');
+    safeToast('⚠️ נשמר מקומית — אין חיבור לענן');
     return;
   }
 
@@ -300,7 +271,6 @@ async function saveRatesToDb() {
 
   const msg = document.getElementById('rates-save-msg');
   if (error) {
-    console.error('Rates save error:', error);
     safeToast('⚠️ שגיאת שמירה: ' + error.message);
   } else {
     safeToast('✓ הגדרות נשמרו');
@@ -322,7 +292,6 @@ async function saveMonthToDb() {
     holidays: [...calState.workedHolidays],
   };
 
-  // שמור מקומית תמיד
   appData.months[key] = monthObj;
   saveLocal();
   renderMonthsList();
@@ -331,7 +300,6 @@ async function saveMonthToDb() {
   closeModal();
   safeToast('החודש נשמר ✓');
 
-  // שמור ב-DB ברקע אם יש DB
   if (!db || !currentWorker?.id) return;
 
   const { error } = await db.from('months').upsert({
@@ -345,16 +313,12 @@ async function saveMonthToDb() {
     holidays:  monthObj.holidays,
   }, { onConflict: 'worker_id,month_key' });
 
-  if (error) {
-    console.error('Month save error:', error.message, error.details);
-    safeToast('⚠️ שמור מקומית — שגיאת ענן: ' + error.message);
-  } else {
-    console.log('✓ Month saved to DB:', key);
-  }
+  if (error) console.error('Month save error:', error.message);
+  else console.log('✓ Month saved:', key);
 }
 
 async function deleteMonthFromDb(key) {
-  if (!key) { key = document.getElementById('editing-month-key')?.value; }
+  if (!key) key = document.getElementById('editing-month-key')?.value;
   if (!key || !appData.months[key]) return;
   if (!confirm('למחוק את חודש ' + key + '?')) return;
 
@@ -366,42 +330,47 @@ async function deleteMonthFromDb(key) {
   closeModal();
   safeToast('החודש נמחק');
 
-  if (!db || !currentUser || !currentWorker?.id) return;
-  await db.from('months')
-    .delete()
-    .eq('worker_id', currentWorker.id)
-    .eq('month_key', key);
+  if (!db || !currentWorker?.id) return;
+  await db.from('months').delete().eq('worker_id', currentWorker.id).eq('month_key', key);
 }
 
-// ── LOAD ALL DATA ─────────────────────────────────────────────
+// ── LOAD DATA ─────────────────────────────────────────────────
 async function loadWorkerData(workerId) {
   if (!db) return;
+  try {
+    const [{ data: months, error: mErr }, { data: rates, error: rErr }] = await Promise.all([
+      db.from('months').select('*').eq('worker_id', workerId),
+      db.from('rates').select('*').eq('worker_id', workerId).maybeSingle(),
+    ]);
 
-  const [{ data: months }, { data: rates }] = await Promise.all([
-    db.from('months').select('*').eq('worker_id', workerId),
-    db.from('rates').select('*').eq('worker_id', workerId).single(),
-  ]);
+    if (mErr) console.error('Months load error:', mErr.message);
+    if (rErr) console.error('Rates load error:', rErr.message);
 
-  appData.months = {};
-  (months || []).forEach(m => {
-    appData.months[m.month_key] = {
-      base: m.base, expenses: m.expenses,
-      vacDays: m.vac_days, notes: m.notes,
-      shabbats: m.shabbats || [], holidays: m.holidays || [],
-    };
-  });
+    appData.months = {};
+    (months || []).forEach(m => {
+      appData.months[m.month_key] = {
+        base: m.base, expenses: m.expenses,
+        vacDays: m.vac_days, notes: m.notes,
+        shabbats: m.shabbats || [], holidays: m.holidays || [],
+      };
+    });
 
-  if (rates) {
-    appData.rates = {
-      bituach: rates.bituach, pension: rates.pension,
-      havraDays: rates.havra_days, havraRate: rates.havra_rate,
-      havraMonthly: (rates.havra_days * rates.havra_rate) / 12,
-      havraAnnual:  rates.havra_days * rates.havra_rate,
-    };
-  }
+    if (rates) {
+      appData.rates = {
+        bituach:      rates.bituach,
+        pension:      rates.pension,
+        havraDays:    rates.havra_days,
+        havraRate:    rates.havra_rate,
+        havraMonth:   rates.havra_month || '7',
+        havraMonthly: (rates.havra_days * rates.havra_rate) / 12,
+        havraAnnual:   rates.havra_days * rates.havra_rate,
+      };
+    }
 
-  appData.worker = workerFromDb(currentWorker);
-  saveLocal(); // sync גם ל-localStorage כ-cache
+    if (currentWorker) appData.worker = workerFromDb(currentWorker);
+    saveLocal();
+    console.log('✓ Data loaded — months:', Object.keys(appData.months).length);
+  } catch(e) { console.error('loadWorkerData error:', e.message); }
 }
 
 // ── SIGNUPS ───────────────────────────────────────────────────
@@ -411,26 +380,18 @@ async function submitSignupToDb() {
   if (!name || !email) { safeToast('נא למלא שם ואימייל'); return; }
   if (!email.includes('@')) { safeToast('אימייל לא תקין'); return; }
 
-  // שמור תמיד מקומית
   const signups = JSON.parse(localStorage.getItem('signups') || '[]');
-  signups.push({ name, email, phone: v('signup-phone'),
-    plan: v('signup-plan'), feedback: v('signup-feedback'),
-    date: new Date().toISOString() });
+  signups.push({ name, email, phone: v('signup-phone'), plan: v('signup-plan'), feedback: v('signup-feedback'), date: new Date().toISOString() });
   localStorage.setItem('signups', JSON.stringify(signups));
   localStorage.setItem('signup_count', signups.length);
 
-  // נסה ל-DB
   if (db) {
-    const { error } = await db.from('signups').insert({
-      name, email, phone: v('signup-phone'),
-      plan: v('signup-plan'), feedback: v('signup-feedback'),
-    });
-    if (error) console.error('Signup save error:', error);
+    const { error } = await db.from('signups').insert({ name, email, phone: v('signup-phone'), plan: v('signup-plan'), feedback: v('signup-feedback') });
+    if (error) console.error('Signup error:', error);
   }
 
   document.getElementById('signup-msg').style.display = 'inline';
-  setV('signup-name',''); setV('signup-email','');
-  setV('signup-phone',''); setV('signup-feedback','');
+  setV('signup-name',''); setV('signup-email',''); setV('signup-phone',''); setV('signup-feedback','');
   if (typeof renderPremiumScreen === 'function') renderPremiumScreen();
   safeToast('✓ נרשמת בהצלחה!');
 }

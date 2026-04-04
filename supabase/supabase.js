@@ -134,13 +134,27 @@ async function onUserLoggedIn() {
   const plan = meta.plan || 'free';
   const planUntil = meta.plan_until ? new Date(meta.plan_until) : null;
   const isPrem = plan === 'premium' && (!planUntil || planUntil > new Date());
-  
+
+  // בדוק גם ב-profiles כ-fallback
+  if (!isPrem && db) {
+    const { data: profile } = await db
+      .from('profiles').select('plan, plan_until')
+      .eq('email', currentUser.email).maybeSingle();
+    if (profile?.plan === 'premium') {
+      const profileUntil = profile.plan_until ? new Date(profile.plan_until) : null;
+      if (!profileUntil || profileUntil > new Date()) {
+        appData.profile = profile;
+        localStorage.setItem('shakaron_premium', 'true');
+        if (typeof applyPlanGates === 'function') applyPlanGates();
+        toast('⭐ ברוך הבא — גרסת פרימיום פעילה!');
+        return;
+      }
+    }
+  }
+
   appData.profile = { plan, plan_until: meta.plan_until };
   localStorage.setItem('shakaron_premium', isPrem ? 'true' : 'false');
-  
-  if (isPrem) {
-    toast('⭐ ברוך הבא — גרסת פרימיום פעילה!');
-  }
+  if (isPrem) toast('⭐ ברוך הבא — גרסת פרימיום פעילה!');
 
   // טען עובדת פעילה
   const { data: workers } = await db

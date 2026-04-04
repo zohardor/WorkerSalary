@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateWorkerStats();
   updateVacBar();
   applyPlanGates();
+  renderAlerts();
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
@@ -74,6 +75,7 @@ function showScreen(id) {
   const idx = ['screen-guide','screen-worker','screen-salary','screen-costs','screen-premium'].indexOf(id);
   document.querySelectorAll('.nav-tab')[idx].classList.add('active');
   if (id === 'screen-salary')  renderMonthsList();
+  if (id === 'screen-worker') renderAlerts();
   if (id === 'screen-guide')   setTimeout(initAccordion, 50);
   if (id === 'screen-costs')   {
     if (!requirePremium('ניהול הוצאות מעסיק')) return;
@@ -946,7 +948,81 @@ function generateTerminationPDF() {
   toast('דוח סיום נפתח – לחץ הדפס לשמירת PDF');
 }
 
-// ─────────────── HELPERS ───────────────
+// ─────────────── ALERTS SYSTEM ───────────────
+
+function renderAlerts() {
+  const container = document.getElementById('alerts-container');
+  if (!container) return;
+
+  const alerts = [];
+  const w = appData.worker;
+  const today = new Date();
+
+  // 1. התראת ויזה
+  if (w?.visaDate) {
+    const visa = new Date(w.visaDate);
+    const daysLeft = Math.ceil((visa - today) / (1000 * 60 * 60 * 24));
+    if (daysLeft <= 0) {
+      alerts.push({ type: 'danger', icon: '🚨', title: 'ויזה פגה!', text: `ויזה פגה לפני ${Math.abs(daysLeft)} ימים. יש לטפל בחידוש מיידית.` });
+    } else if (daysLeft <= 30) {
+      alerts.push({ type: 'danger', icon: '⚠️', title: 'ויזה פגה בקרוב', text: `נותרו ${daysLeft} ימים לפקיעת הויזה (${visa.toLocaleDateString('he-IL')}).` });
+    } else if (daysLeft <= 90) {
+      alerts.push({ type: 'warn', icon: '📋', title: 'זמן לחדש ויזה', text: `הויזה פגה בעוד ${daysLeft} ימים (${visa.toLocaleDateString('he-IL')}). כדאי להתחיל בתהליך חידוש.` });
+    }
+  }
+
+  // 2. התראת ביטוח לאומי — תשלום חודשי
+  const currentMonth = today.getDate();
+  if (currentMonth >= 1 && currentMonth <= 20) {
+    alerts.push({ type: 'info', icon: '💳', title: 'תזכורת ביטוח לאומי', text: `יש לשלם ביטוח לאומי עד ה-20 לחודש. לא שולם? <a href="https://www.btl.gov.il" target="_blank" style="color:var(--accent);">כנס לאתר ב"ל</a>` });
+  }
+
+  // 3. התראת הבראה — בחודש התשלום
+  const havraMonth = parseInt(appData.rates?.havraMonth || '7');
+  if (today.getMonth() + 1 === havraMonth) {
+    const days  = calcHavraDays(w?.startDate);
+    const rate  = appData.rates?.havraRate || 378;
+    const total = days * rate;
+    alerts.push({ type: 'warn', icon: '🌴', title: 'חודש הבראה!', text: `מגיע לתשלום הבראה: ${days} ימים × ₪${rate} = <strong>₪${total.toLocaleString()}</strong>` });
+  }
+
+  // 4. יום הולדת / שנת עבודה
+  if (w?.startDate) {
+    const start = new Date(w.startDate);
+    const anniversary = new Date(today.getFullYear(), start.getMonth(), start.getDate());
+    const daysToAnniv = Math.ceil((anniversary - today) / (1000 * 60 * 60 * 24));
+    const years = Math.round((today - start) / (1000 * 60 * 60 * 24 * 365.25));
+    if (daysToAnniv >= 0 && daysToAnniv <= 14) {
+      alerts.push({ type: 'info', icon: '🎂', title: `שנה ${years + 1} להעסקה בעוד ${daysToAnniv} ימים`, text: `בשנה החדשה מגיע לעובדת עדכון ימי הבראה ואולי העלאת שכר.` });
+    }
+  }
+
+  if (!alerts.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const colors = {
+    danger: 'rgba(239,68,68,0.1)',
+    warn:   'rgba(251,191,36,0.1)',
+    info:   'rgba(91,127,255,0.1)',
+  };
+  const borders = {
+    danger: 'var(--danger)',
+    warn:   'var(--warn)',
+    info:   'var(--accent)',
+  };
+
+  container.innerHTML = alerts.map(a => `
+    <div style="background:${colors[a.type]};border:1px solid ${borders[a.type]};border-radius:10px;padding:14px 16px;margin-bottom:12px;display:flex;gap:12px;align-items:flex-start;">
+      <span style="font-size:20px;flex-shrink:0;">${a.icon}</span>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;">${a.title}</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.5;">${a.text}</div>
+      </div>
+    </div>
+  `).join('');
+}
 function v(id) { const el = document.getElementById(id); return el ? el.value : ''; }
 function setV(id, val) { const el = document.getElementById(id); if (el && val !== undefined && val !== null) el.value = val; }
 function setText(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }

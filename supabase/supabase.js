@@ -63,26 +63,26 @@ function updateAuthUI() {
 
 // ── AUTH FUNCTIONS ────────────────────────────────────────────
 async function signInWithGoogle() {
-  if (!db) { toast('Supabase לא זמין'); return; }
+  if (!db) { safeToast('Supabase לא זמין'); return; }
   const redirectTo = window.location.origin + window.location.pathname;
   const { error } = await db.auth.signInWithOAuth({
     provider: 'google',
     options: { redirectTo }
   });
-  if (error) toast('שגיאה: ' + error.message);
+  if (error) safeToast('שגיאה: ' + error.message);
 }
 
 async function doLogin() {
-  if (!db) { toast('Supabase לא זמין'); return; }
+  if (!db) { safeToast('Supabase לא זמין'); return; }
   const email    = document.getElementById('login-email')?.value?.trim();
   const password = document.getElementById('login-password')?.value;
   const msg      = document.getElementById('login-msg');
-  if (!email || !email.includes('@')) { toast('נא להכניס אימייל תקין'); return; }
+  if (!email || !email.includes('@')) { safeToast('נא להכניס אימייל תקין'); return; }
 
   if (password) {
     const { error } = await db.auth.signInWithPassword({ email, password });
     if (error) {
-      toast('שגיאה: ' + error.message);
+      safeToast('שגיאה: ' + error.message);
     } else {
       closeLoginScreen();
     }
@@ -91,7 +91,7 @@ async function doLogin() {
       email, options: { emailRedirectTo: window.location.href }
     });
     if (error) {
-      toast('שגיאה: ' + error.message);
+      safeToast('שגיאה: ' + error.message);
     } else {
       if (msg) { msg.textContent = '✓ נשלח קישור למייל ' + email; msg.style.display = 'block'; }
     }
@@ -101,14 +101,14 @@ async function doLogin() {
 async function signInWithEmailOrPassword() { await doLogin(); }
 
 async function signInWithEmail(email) {
-  if (!db) { toast('Supabase לא זמין'); return; }
-  if (!email || !email.includes('@')) { toast('נא להכניס אימייל תקין'); return; }
+  if (!db) { safeToast('Supabase לא זמין'); return; }
+  if (!email || !email.includes('@')) { safeToast('נא להכניס אימייל תקין'); return; }
   const { error } = await db.auth.signInWithOtp({
     email,
     options: { emailRedirectTo: window.location.href }
   });
-  if (error) toast('שגיאה: ' + error.message);
-  else toast('✓ נשלח קישור למייל ' + email);
+  if (error) safeToast('שגיאה: ' + error.message);
+  else safeToast('✓ נשלח קישור למייל ' + email);
 }
 
 async function signOut() {
@@ -120,14 +120,14 @@ async function signOut() {
   appData.profile = null;
   updateAuthUI();
   showLoginScreen();
-  toast('התנתקת בהצלחה');
+  safeToast('התנתקת בהצלחה');
 }
 
 // ── ON LOGIN ──────────────────────────────────────────────────
 async function onUserLoggedIn() {
   if (!db || !currentUser) return;
 
-  toast('✓ מחובר כ-' + (currentUser.email || 'משתמש'));
+  safeToast('✓ מחובר כ-' + (currentUser.email || 'משתמש'));
 
   // קרא תוכנית מ-app_metadata (מוגדר ע"י אדמין)
   const meta = currentUser.app_metadata || {};
@@ -146,7 +146,7 @@ async function onUserLoggedIn() {
         appData.profile = profile;
         localStorage.setItem('shakaron_premium', 'true');
         if (typeof applyPlanGates === 'function') applyPlanGates();
-        toast('⭐ ברוך הבא — גרסת פרימיום פעילה!');
+        safeToast('⭐ ברוך הבא — גרסת פרימיום פעילה!');
         return;
       }
     }
@@ -154,7 +154,7 @@ async function onUserLoggedIn() {
 
   appData.profile = { plan, plan_until: meta.plan_until };
   localStorage.setItem('shakaron_premium', isPrem ? 'true' : 'false');
-  if (isPrem) toast('⭐ ברוך הבא — גרסת פרימיום פעילה!');
+  if (isPrem) safeToast('⭐ ברוך הבא — גרסת פרימיום פעילה!');
 
   // טען עובדת פעילה
   const { data: workers } = await db
@@ -242,7 +242,7 @@ async function saveWorkerToDb() {
 
   if (result.error) {
     console.error('Worker save error:', result.error.message, result.error.details);
-    toast('⚠️ ' + result.error.message);
+    safeToast('⚠️ ' + result.error.message);
     return;
   }
   currentWorker = result.data;
@@ -286,7 +286,7 @@ async function saveRatesToDb() {
 
   // שמור ב-DB
   if (!db || !currentWorker?.id) {
-    toast('⚠️ אין חיבור לענן — נשמר מקומית');
+    safeToast('⚠️ אין חיבור לענן — נשמר מקומית');
     return;
   }
 
@@ -301,9 +301,9 @@ async function saveRatesToDb() {
   const msg = document.getElementById('rates-save-msg');
   if (error) {
     console.error('Rates save error:', error);
-    toast('⚠️ שגיאת שמירה: ' + error.message);
+    safeToast('⚠️ שגיאת שמירה: ' + error.message);
   } else {
-    toast('✓ הגדרות נשמרו');
+    safeToast('✓ הגדרות נשמרו');
     if (msg) { msg.style.display = 'inline'; setTimeout(() => msg.style.display = 'none', 3000); }
   }
 }
@@ -311,7 +311,7 @@ async function saveRatesToDb() {
 // ── MONTHS ────────────────────────────────────────────────────
 async function saveMonthToDb() {
   const key = v('m-month');
-  if (!key) { toast('בחר חודש'); return; }
+  if (!key) { safeToast('בחר חודש'); return; }
 
   const monthObj = {
     base:     parseFloat(v('m-base'))     || 0,
@@ -329,7 +329,7 @@ async function saveMonthToDb() {
   updateWorkerStats();
   updateVacBar();
   closeModal();
-  toast('החודש נשמר ✓');
+  safeToast('החודש נשמר ✓');
 
   // שמור ב-DB ברקע אם יש DB
   if (!db || !currentWorker?.id) return;
@@ -347,7 +347,7 @@ async function saveMonthToDb() {
 
   if (error) {
     console.error('Month save error:', error.message, error.details);
-    toast('⚠️ שמור מקומית — שגיאת ענן: ' + error.message);
+    safeToast('⚠️ שמור מקומית — שגיאת ענן: ' + error.message);
   } else {
     console.log('✓ Month saved to DB:', key);
   }
@@ -364,7 +364,7 @@ async function deleteMonthFromDb(key) {
   updateWorkerStats();
   updateVacBar();
   closeModal();
-  toast('החודש נמחק');
+  safeToast('החודש נמחק');
 
   if (!db || !currentUser || !currentWorker?.id) return;
   await db.from('months')
@@ -408,8 +408,8 @@ async function loadWorkerData(workerId) {
 async function submitSignupToDb() {
   const name  = v('signup-name').trim();
   const email = v('signup-email').trim();
-  if (!name || !email) { toast('נא למלא שם ואימייל'); return; }
-  if (!email.includes('@')) { toast('אימייל לא תקין'); return; }
+  if (!name || !email) { safeToast('נא למלא שם ואימייל'); return; }
+  if (!email.includes('@')) { safeToast('אימייל לא תקין'); return; }
 
   // שמור תמיד מקומית
   const signups = JSON.parse(localStorage.getItem('signups') || '[]');
@@ -432,5 +432,5 @@ async function submitSignupToDb() {
   setV('signup-name',''); setV('signup-email','');
   setV('signup-phone',''); setV('signup-feedback','');
   if (typeof renderPremiumScreen === 'function') renderPremiumScreen();
-  toast('✓ נרשמת בהצלחה!');
+  safeToast('✓ נרשמת בהצלחה!');
 }

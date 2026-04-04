@@ -74,7 +74,7 @@ function showScreen(id) {
   const idx = ['screen-guide','screen-worker','screen-salary','screen-costs','screen-premium'].indexOf(id);
   document.querySelectorAll('.nav-tab')[idx].classList.add('active');
   if (id === 'screen-salary')  renderMonthsList();
-  if (id === 'screen-costs')   {
+  if (id === 'screen-guide') setTimeout(initAccordion, 50);
     if (!requirePremium('ניהול הוצאות מעסיק')) return;
     populateRatesForm(); renderCostsScreen(); updateHavraPreview();
   }
@@ -86,6 +86,22 @@ function showPhase(phase) {
     document.getElementById('phase-' + p).style.display = p === phase ? 'block' : 'none';
     const btn = document.getElementById('btn-' + p);
     if (btn) btn.classList.toggle('active', p === phase);
+  });
+  // Init accordion for newly shown phase
+  initAccordion();
+}
+
+function initAccordion() {
+  document.querySelectorAll('.tl-title').forEach(title => {
+    if (title._accordionInit) return;
+    title._accordionInit = true;
+    title.addEventListener('click', () => {
+      const item = title.closest('.tl-item');
+      const wasOpen = item.classList.contains('open');
+      // Close all in same timeline
+      item.closest('.timeline')?.querySelectorAll('.tl-item').forEach(i => i.classList.remove('open'));
+      if (!wasOpen) item.classList.add('open');
+    });
   });
 }
 

@@ -500,10 +500,29 @@
     .tl-title {
       font-size: 16px;
       font-weight: 700;
-      margin-bottom: 8px;
+      margin-bottom: 0;
       color: var(--text);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
     }
-    .tl-body p { font-size: 13px; color: var(--text2); margin-bottom: 10px; line-height: 1.6; }
+    .tl-title::after {
+      content: '›';
+      font-size: 20px;
+      color: var(--text3);
+      transition: transform .2s;
+      transform: rotate(90deg);
+    }
+    .tl-item.open .tl-title::after { transform: rotate(270deg); }
+    .tl-body {
+      overflow: hidden;
+      max-height: 0;
+      transition: max-height .3s ease, margin-top .2s;
+      margin-top: 0;
+    }
+    .tl-item.open .tl-body { max-height: 1000px; margin-top: 10px; }
     .tl-checklist { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
     .chk {
       font-size: 13px;

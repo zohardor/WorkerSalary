@@ -64,9 +64,10 @@ function updateAuthUI() {
 // ── AUTH FUNCTIONS ────────────────────────────────────────────
 async function signInWithGoogle() {
   if (!db) { toast('Supabase לא זמין'); return; }
+  const redirectTo = window.location.origin + window.location.pathname;
   const { error } = await db.auth.signInWithOAuth({
     provider: 'google',
-    options: { redirectTo: window.location.href }
+    options: { redirectTo }
   });
   if (error) toast('שגיאה: ' + error.message);
 }
@@ -115,9 +116,11 @@ async function signOut() {
   await db.auth.signOut();
   currentUser = null;
   currentWorker = null;
+  localStorage.removeItem('shakaron_premium');
+  appData.profile = null;
   updateAuthUI();
   showLoginScreen();
-  toast('התנתקת');
+  toast('התנתקת בהצלחה');
 }
 
 // ── ON LOGIN ──────────────────────────────────────────────────

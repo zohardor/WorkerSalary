@@ -46,16 +46,19 @@ function closeLoginScreen() {
 }
 
 function updateAuthUI() {
-  const btn = document.getElementById('auth-btn');
+  const btn     = document.getElementById('auth-btn');
+  const syncBtn = document.getElementById('sync-cloud-btn');
   if (!btn) return;
   if (currentUser) {
     const name = currentUser.email?.split('@')[0] || 'מחובר';
     btn.textContent = `✓ ${name}`;
     btn.onclick = () => { if (confirm('להתנתק?')) signOut(); };
     closeLoginScreen();
+    if (syncBtn) syncBtn.style.display = 'inline-flex';
   } else {
     btn.textContent = '👤 כניסה';
     btn.onclick = () => showLoginScreen();
+    if (syncBtn) syncBtn.style.display = 'none';
   }
 }
 
@@ -394,4 +397,89 @@ async function submitSignupToDb() {
   setV('signup-name',''); setV('signup-email',''); setV('signup-phone',''); setV('signup-feedback','');
   if (typeof renderPremiumScreen === 'function') renderPremiumScreen();
   safeToast('✓ נרשמת בהצלחה!');
+}
+
+// ── SYNC ALL TO CLOUD ─────────────────────────────────────────
+async function syncAllToCloud() {
+  if (!db || !currentUser) {
+    safeToast('התחבר קודם');
+    showLoginScreen();
+    return;
+  }
+
+  const btn = document.getElementById('sync-cloud-btn');
+  if (btn) btn.textContent = '⏳ מסנכרן...';
+
+  try {
+    // 1. עובדת
+    const w = appData.worker;
+    if (w?.name) {
+      const workerData = {
+        user_id:       currentUser.id,
+        name:          w.name,
+        passport:      w.passport,
+        nationality:   w.nationality || 'india',
+        start_date:    w.startDate || null,
+        visa_date:     w.visaDate  || null,
+        phone:         w.phone,
+        base_salary:   w.baseSalary   || 0,
+        shabbat_bonus: w.shabbatBonus || 0,
+        holiday_bonus: w.holidayBonus || 0,
+        vac_total:     w.vacTotal     || 0,
+        hol_total:     w.holTotal     || 0,
+        sick_total:    w.sickTotal    || 0,
+      };
+
+      if (currentWorker?.id) {
+        await db.from('workers').update(workerData).eq('id', currentWorker.id);
+      } else {
+        const { data: newW } = await db.from('workers').insert(workerData).select().single();
+        if (newW) currentWorker = newW;
+      }
+    }
+
+    if (!currentWorker?.id) {
+      safeToast('⚠️ שמור פרטי עובדת קודם');
+      if (btn) btn.textContent = '☁️ סנכרן';
+      return;
+    }
+
+    // 2. rates
+    const r = appData.rates;
+    if (r) {
+      await db.from('rates').upsert({
+        worker_id:  currentWorker.id,
+        bituach:    r.bituach    || 0,
+        pension:    r.pension    || 0,
+        havra_days: r.havraDays  || 0,
+        havra_rate: r.havraRate  || 0,
+      }, { onConflict: 'worker_id' });
+    }
+
+    // 3. חודשים
+    const months = Object.entries(appData.months || {});
+    let saved = 0;
+    for (const [key, m] of months) {
+      const { error } = await db.from('months').upsert({
+        worker_id: currentWorker.id,
+        month_key: key,
+        base:      m.base     || 0,
+        expenses:  m.expenses || 0,
+        vac_days:  m.vacDays  || 0,
+        notes:     m.notes    || '',
+        shabbats:  m.shabbats || [],
+        holidays:  m.holidays || [],
+      }, { onConflict: 'worker_id,month_key' });
+      if (!error) saved++;
+    }
+
+    safeToast(`✓ סונכרן — ${saved} חודשים`);
+    if (btn) btn.textContent = '✓ מסונכרן';
+    setTimeout(() => { if (btn) btn.textContent = '☁️ סנכרן'; }, 3000);
+
+  } catch(e) {
+    console.error('Sync error:', e);
+    safeToast('⚠️ שגיאת סנכרון');
+    if (btn) btn.textContent = '☁️ סנכרן';
+  }
 }

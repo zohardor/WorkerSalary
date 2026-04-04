@@ -96,11 +96,11 @@ function initAccordion() {
     if (title._accordionInit) return;
     title._accordionInit = true;
     title.addEventListener('click', () => {
-      const item = title.closest('.tl-item');
-      const wasOpen = item.classList.contains('open');
+      const content = title.closest('.tl-content');
+      const wasOpen = content.classList.contains('open');
       // Close all in same timeline
-      item.closest('.timeline')?.querySelectorAll('.tl-item').forEach(i => i.classList.remove('open'));
-      if (!wasOpen) item.classList.add('open');
+      content.closest('.timeline')?.querySelectorAll('.tl-content').forEach(c => c.classList.remove('open'));
+      if (!wasOpen) content.classList.add('open');
     });
   });
 }

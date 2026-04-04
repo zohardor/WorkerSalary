@@ -515,14 +515,14 @@
       transition: transform .2s;
       transform: rotate(90deg);
     }
-    .tl-item.open .tl-title::after { transform: rotate(270deg); }
+    .tl-content.open .tl-title::after { transform: rotate(270deg); }
     .tl-body {
       overflow: hidden;
       max-height: 0;
-      transition: max-height .3s ease, margin-top .2s;
+      transition: max-height .35s ease, margin-top .2s;
       margin-top: 0;
     }
-    .tl-item.open .tl-body { max-height: 1000px; margin-top: 10px; }
+    .tl-content.open .tl-body { max-height: 2000px; margin-top: 10px; }
     .tl-checklist { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
     .chk {
       font-size: 13px;

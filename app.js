@@ -10,10 +10,241 @@ let appData = {
 
 let calState = {
   year: new Date().getFullYear(),
-  month: new Date().getMonth(), // 0-based
+  month: new Date().getMonth(),
   workedShabbats: new Set(),
-  workedHolidays: new Set()
+  workedHolidays: new Set(),
+  customVacDays:  new Set()   // ימי חופשה ידניים
 };
+
+// ─────────────── GUI TEST PANEL ───────────────
+// פתיחה: Ctrl+Shift+T בדפדפן
+
+document.addEventListener('keydown', e => {
+  if (e.ctrlKey && e.shiftKey && e.key === 'Q') {
+    e.preventDefault();
+    toggleGuiTests();
+  }
+});
+
+function toggleGuiTests() {
+  let panel = document.getElementById('gui-test-panel');
+  if (!panel) {
+    panel = createGuiTestPanel();
+    document.body.appendChild(panel);
+  }
+  panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+}
+
+function createGuiTestPanel() {
+  const panel = document.createElement('div');
+  panel.id = 'gui-test-panel';
+  panel.style.cssText = `
+    position:fixed;inset:0;z-index:9999;background:rgba(15,17,23,0.97);
+    display:flex;flex-direction:column;direction:rtl;font-family:'Heebo',sans-serif;
+  `;
+  panel.innerHTML = `
+    <div style="padding:16px 20px;border-bottom:1px solid #2d3352;display:flex;align-items:center;gap:12px;">
+      <div style="font-size:20px;font-weight:900;background:linear-gradient(135deg,#5b7fff,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">שכרון ✦ GUI Tests</div>
+      <div id="gt-summary" style="font-size:13px;color:#5a6280;">לחץ הרץ...</div>
+      <button onclick="runGuiTests()" style="margin-right:auto;padding:8px 20px;background:#5b7fff;color:#fff;border:none;border-radius:8px;font-family:'Heebo',sans-serif;font-weight:700;cursor:pointer;">▶ הרץ</button>
+      <button onclick="toggleGuiTests()" style="padding:8px 14px;background:#1a1f2e;color:#9ba4c0;border:1px solid #2d3352;border-radius:8px;font-family:'Heebo',sans-serif;cursor:pointer;">✕ סגור</button>
+    </div>
+    <div id="gt-results" style="flex:1;overflow-y:auto;padding:16px 20px;"></div>
+  `;
+  return panel;
+}
+
+async function runGuiTests() {
+  const out = document.getElementById('gt-results');
+  const summary = document.getElementById('gt-summary');
+  out.innerHTML = '';
+  let pass = 0, fail = 0;
+
+  function row(name, ok, detail='') {
+    if (ok) pass++; else fail++;
+    out.innerHTML += `
+      <div style="display:flex;gap:10px;padding:9px 14px;background:#1a1f2e;border-radius:8px;margin-bottom:6px;border-right:3px solid ${ok?'#34d399':'#f87171'};">
+        <span style="font-size:15px;">${ok?'✅':'❌'}</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:#e8eaf6;">${name}</div>
+          ${detail ? `<div style="font-size:12px;color:#5a6280;margin-top:2px;">${detail}</div>` : ''}
+        </div>
+      </div>`;
+    summary.textContent = `✅ ${pass} | ❌ ${fail}`;
+  }
+
+  function hdr(title) {
+    out.innerHTML += `<div style="font-size:12px;font-weight:700;color:#5a6280;text-transform:uppercase;letter-spacing:.5px;margin:16px 0 8px;">${title}</div>`;
+  }
+
+  // ── מבנה DOM ──────────────────────────────────
+  hdr('🏗 מבנה DOM');
+  row('top-bar קיים', !!document.querySelector('.top-bar'));
+  row('כפתור כניסה קיים', !!document.getElementById('auth-btn'));
+  row('5 מסכים קיימים', document.querySelectorAll('.screen').length === 5,
+    `נמצאו: ${document.querySelectorAll('.screen').length}`);
+  // בדוק מסך מדריך לפני כל ניווט
+  const guideActiveNow = document.getElementById('screen-guide')?.classList.contains('active');
+  row('מסך מדריך טעון כ-active', guideActiveNow || document.querySelector('.screen.active')?.id === 'screen-guide',
+    `active screen: ${document.querySelector('.screen.active')?.id}`);
+  row('5 טאבים בניווט', document.querySelectorAll('.nav-tab').length === 5,
+    `נמצאו: ${document.querySelectorAll('.nav-tab').length}`);
+  row('לוח שנה קיים', !!document.getElementById('cal-grid'));
+  row('שדות עובדת קיימים', !!document.getElementById('w-name') && !!document.getElementById('w-passport'));
+  row('מסך כניסה קיים', !!document.getElementById('screen-login'));
+
+  // ── ניווט בין מסכים ───────────────────────────
+  hdr('🧭 ניווט');
+
+  const screens = ['screen-worker','screen-salary','screen-guide','screen-premium'];
+  for (const sid of screens) {
+    showScreen(sid);
+    await new Promise(r => setTimeout(r, 50));
+    const active = document.getElementById(sid)?.classList.contains('active');
+    row(`מעבר ל-${sid}`, active);
+  }
+  showScreen('screen-guide'); // חזור למדריך
+
+  // ── פרטי עובדת ────────────────────────────────
+  hdr('👤 פרטי עובדת');
+
+  showScreen('screen-worker');
+  await new Promise(r => setTimeout(r, 100));
+
+  const nameEl = document.getElementById('w-name');
+  const prevName = nameEl?.value || '';
+  if (nameEl) {
+    nameEl.value = 'בדיקה GUI';
+    nameEl.dispatchEvent(new Event('input'));
+    await new Promise(r => setTimeout(r, 100));
+    row('הזנת שם עובדת', appData.worker?.name === 'בדיקה GUI',
+      `appData.worker.name = "${appData.worker?.name}"`);
+    nameEl.value = prevName;
+    nameEl.dispatchEvent(new Event('input'));
+  } else {
+    row('הזנת שם עובדת', false, 'w-name לא נמצא');
+  }
+
+  const baseEl = document.getElementById('w-base');
+  if (baseEl) {
+    const prev = baseEl.value;
+    baseEl.value = '7500';
+    baseEl.dispatchEvent(new Event('input'));
+    await new Promise(r => setTimeout(r, 100));
+    row('הזנת שכר בסיס', parseFloat(appData.worker?.baseSalary) === 7500,
+      `baseSalary = ${appData.worker?.baseSalary}`);
+    baseEl.value = prev;
+    baseEl.dispatchEvent(new Event('input'));
+  }
+
+  // ── ניהול חודשי ───────────────────────────────
+  hdr('📅 ניהול חודשי');
+
+  showScreen('screen-salary');
+  await new Promise(r => setTimeout(r, 100));
+
+  const monthsBefore = Object.keys(appData.months).length;
+
+  // פתח מודל חודש
+  openMonthModal();
+  await new Promise(r => setTimeout(r, 100));
+  const modalOpen = document.getElementById('month-modal')?.classList.contains('open');
+  row('פתיחת מודל חודש', modalOpen);
+
+  if (modalOpen) {
+    // הזן נתונים
+    const monthEl = document.getElementById('m-month');
+    if (monthEl) monthEl.value = '2024-11';
+    const baseM = document.getElementById('m-base');
+    if (baseM) { baseM.value = '5500'; baseM.dispatchEvent(new Event('input')); }
+    await new Promise(r => setTimeout(r, 100));
+
+    row('הזנת שכר בחודש', v('m-base') === '5500', `m-base = ${v('m-base')}`);
+    row('חישוב סיכום אוטומטי', !!document.getElementById('sum-total')?.textContent);
+
+    // שמור חודש
+    saveMonthToDb();
+    await new Promise(r => setTimeout(r, 300));
+    const monthsAfter = Object.keys(appData.months).length;
+    row('שמירת חודש', monthsAfter > monthsBefore,
+      `לפני: ${monthsBefore}, אחרי: ${monthsAfter}`);
+
+    // מחק את החודש שיצרנו
+    if (appData.months['2024-11']) {
+      delete appData.months['2024-11'];
+      saveLocal();
+      renderMonthsList();
+      row('מחיקת חודש בדיקה', !appData.months['2024-11']);
+    }
+  } else {
+    closeModal();
+  }
+
+  // ── מסך פרימיום ───────────────────────────────
+  hdr('⭐ פרימיום');
+
+  showScreen('screen-premium');
+  await new Promise(r => setTimeout(r, 100));
+
+  row('טבלת פיצ\'רים קיימת', !!document.getElementById('feature-table-body'));
+  row('כפתור הרשמה קיים', document.querySelectorAll('button[onclick*="openSignup"]').length > 0);
+
+  const premiumBefore = localStorage.getItem('shakaron_premium') === 'true';
+  localStorage.setItem('shakaron_premium', (!premiumBefore).toString());
+  const premiumAfter = localStorage.getItem('shakaron_premium') === 'true';
+  row('toggle פרימיום', premiumAfter !== premiumBefore,
+    `לפני: ${premiumBefore}, אחרי: ${premiumAfter}`);
+  localStorage.setItem('shakaron_premium', premiumBefore.toString());
+  applyPlanGates();
+
+  // ── מסך כניסה ─────────────────────────────────
+  hdr('🔐 מסך כניסה');
+
+  const loginScreen = document.getElementById('screen-login');
+  row('מסך כניסה קיים', !!loginScreen);
+
+  showLoginScreen();
+  await new Promise(r => setTimeout(r, 100));
+  row('פתיחת מסך כניסה', loginScreen?.style.display !== 'none');
+
+  closeLoginScreen();
+  await new Promise(r => setTimeout(r, 100));
+  row('סגירת מסך כניסה', loginScreen?.style.display === 'none');
+
+  row('שדה מייל בכניסה', !!document.getElementById('login-email'));
+  row('שדה סיסמה בכניסה', !!document.getElementById('login-password'));
+  row('כפתור כניסה קיים', !!document.querySelector('button[onclick*="doLogin"]'));
+
+  // ── פונקציות קריטיות ──────────────────────────
+  hdr('⚙️ פונקציות קריטיות');
+
+  row('showScreen', typeof showScreen === 'function');
+  row('saveWorkerToDb', typeof saveWorkerToDb === 'function');
+  row('saveMonthToDb', typeof saveMonthToDb === 'function');
+  row('generatePDF', typeof generatePDF === 'function');
+  row('calcTermination', typeof calcTermination === 'function');
+  row('calcHavraDays', typeof calcHavraDays === 'function');
+  row('isPremium', typeof isPremium === 'function');
+  row('renderAlerts', typeof renderAlerts === 'function');
+  row('initAccordion', typeof initAccordion === 'function');
+  row('syncAllToCloud', typeof syncAllToCloud === 'function');
+
+  // ── נתוני State ────────────────────────────────
+  hdr('📊 State');
+
+  row('appData קיים', typeof appData === 'object');
+  row('appData.worker קיים', typeof appData.worker === 'object');
+  row('appData.months קיים', typeof appData.months === 'object');
+  row('appData.rates קיים', typeof appData.rates === 'object');
+  row('calState קיים', typeof calState === 'object');
+  row('calState.workedShabbats הוא Set', calState.workedShabbats instanceof Set);
+
+  // חזור למדריך
+  showScreen('screen-guide');
+
+  summary.textContent = `✅ ${pass} עברו | ❌ ${fail} נכשלו`;
+  summary.style.color = fail > 0 ? '#f87171' : '#34d399';
+}
 
 // ─────────────── INIT ───────────────
 document.addEventListener('DOMContentLoaded', () => {
@@ -278,6 +509,7 @@ function openMonthModal(key = null, pdfOnly = false) {
     calState.month = mo - 1;
     calState.workedShabbats = new Set(m.shabbats || []);
     calState.workedHolidays = new Set(m.holidays || []);
+    calState.customVacDays  = new Set(m.customVacDays || []);
   } else {
     document.getElementById('editing-month-key').value = '';
     document.getElementById('modal-title-text').textContent = pdfOnly ? 'בחר חודש לדוח PDF' : 'הוספת חודש חדש';
@@ -287,6 +519,7 @@ function openMonthModal(key = null, pdfOnly = false) {
     calState.month = now.getMonth();
     calState.workedShabbats = new Set();
     calState.workedHolidays = new Set();
+    calState.customVacDays  = new Set();
     const monthStr = calState.year + '-' + String(calState.month + 1).padStart(2,'0');
     setV('m-month', monthStr);
     setV('m-base', appData.worker.baseSalary || '');
@@ -313,7 +546,8 @@ function saveMonth() {
     vacDays: parseInt(v('m-vac-days')) || 0,
     notes: v('m-notes'),
     shabbats: [...calState.workedShabbats],
-    holidays: [...calState.workedHolidays]
+    holidays: [...calState.workedHolidays],
+    customVacDays: [...calState.customVacDays],
   };
   saveLocal();
   renderMonthsList();
@@ -368,20 +602,23 @@ function renderCalendar() {
     const isHol = !!holInfo;
     const workedSab = calState.workedShabbats.has(dateStr);
     const workedHol = calState.workedHolidays.has(dateStr);
+    const isCustomVac = calState.customVacDays.has(dateStr);
     const isToday = dateStr === today;
 
     let cls = 'cal-day';
-    if (workedSab) cls += ' shabbat-worked';
+    if (workedSab)    cls += ' shabbat-worked';
     else if (workedHol) cls += ' holiday-worked';
-    else if (isSat) cls += ' is-shabbat';
-    else if (isHol) cls += ' is-holiday';
+    else if (isCustomVac) cls += ' custom-vac';
+    else if (isSat)   cls += ' is-shabbat';
+    else if (isHol)   cls += ' is-holiday';
     if (isToday) cls += ' today';
 
-    const dot = isHol && !workedSab ? '<div class="hol-dot"></div>' : '';
-    const title = isHol ? holInfo.name : (isSat ? 'שבת' : '');
+    const dot = isHol && !workedSab && !isCustomVac ? '<div class="hol-dot"></div>' : '';
+    const vacDot = isCustomVac ? '<div class="vac-dot">🗓</div>' : '';
+    const title = isCustomVac ? 'חג מותאם אישית' : (isHol ? holInfo.name : (isSat ? 'שבת' : ''));
 
     html += `<div class="${cls}" onclick="toggleDay('${dateStr}', ${isSat}, ${isHol})" title="${title}">
-      ${d}${dot}
+      ${d}${dot}${vacDot}
     </div>`;
   }
 
@@ -396,13 +633,27 @@ function toggleDay(dateStr, isSat, isHol) {
   } else if (isHol) {
     if (calState.workedHolidays.has(dateStr)) calState.workedHolidays.delete(dateStr);
     else calState.workedHolidays.add(dateStr);
+  } else {
+    // יום רגיל — toggle חג מותאם אישית (נספר בחגים)
+    if (calState.customVacDays.has(dateStr)) {
+      calState.customVacDays.delete(dateStr);
+    } else {
+      calState.customVacDays.add(dateStr);
+    }
   }
   renderCalendar();
+  updateCustomVacDisplay();
+}
+
+function updateCustomVacDisplay() {
+  const count = calState.customVacDays.size;
+  const el = document.getElementById('custom-vac-count');
+  if (el) el.textContent = count;
 }
 
 function updateSummary() {
   const nSab = calState.workedShabbats.size;
-  const nHol = calState.workedHolidays.size;
+  const nHol = calState.workedHolidays.size + calState.customVacDays.size;
   const w = appData.worker;
   const base = parseFloat(v('m-base')) || parseFloat(w.baseSalary) || 0;
   const sabBonus = parseFloat(w.shabbatBonus) || 0;
@@ -417,180 +668,205 @@ function updateSummary() {
 
 // ─────────────── PDF GENERATION ───────────────
 function generatePDF() {
-  const key = v('m-month') || document.getElementById('editing-month-key').value;
+  const key = v('m-month') || document.getElementById('editing-month-key')?.value;
   if (!key) { toast('בחר חודש תחילה'); return; }
 
   const [yr, mo] = key.split('-');
   const monthLabel = HEB_MONTHS[parseInt(mo)-1] + ' ' + yr;
-  const w = appData.worker;
-  const nat = w.nationality || 'india';
+  const w   = appData.worker || {};
+  const r   = appData.rates  || {};
+  const nat = w.nationality  || 'india';
   const nationalities = ['israel', nat];
   const daysInMonth = new Date(parseInt(yr), parseInt(mo), 0).getDate();
-  const firstDay = new Date(parseInt(yr), parseInt(mo)-1, 1).getDay();
+  const firstDay    = new Date(parseInt(yr), parseInt(mo)-1, 1).getDay();
 
-  const nSab = calState.workedShabbats.size;
-  const nHol = calState.workedHolidays.size;
-  const base = parseFloat(v('m-base')) || 0;
-  const exp  = parseFloat(v('m-expenses')) || 0;
-  const sabBonus = parseFloat(w.shabbatBonus) || 0;
-  const holBonus = parseFloat(w.holidayBonus) || 0;
-  const total = base + nSab * sabBonus + nHol * holBonus + exp;
+  const nSab     = calState.workedShabbats.size;
+  const nHol     = calState.workedHolidays.size;
+  const base     = parseFloat(v('m-base'))     || 0;
+  const exp      = parseFloat(v('m-expenses')) || 0;
+  const sabBonus = parseFloat(w.shabbatBonus)  || 0;
+  const holBonus = parseFloat(w.holidayBonus)  || 0;
+  const gross    = base + nSab * sabBonus + nHol * holBonus + exp;
 
-  // לוח שנה
+  const bituachAmt  = (base * (r.bituach || 0)) / 100;
+  const pensionAmt  = (base * (r.pension  || 0)) / 100;
+  const havraDays   = calcHavraDays(w.startDate);
+  const havraAmt    = ((r.havraRate || 378) * havraDays) / 12;
+  const totalEmployer = bituachAmt + pensionAmt + havraAmt;
+  const totalCost   = gross + totalEmployer;
+
   const dayNames = ['א','ב','ג','ד','ה','ו','ש'];
-  let calCells = dayNames.map(d =>
-    `<div class="cal-head">${d}</div>`).join('');
+  let calCells = dayNames.map(d => `<div class="cal-head">${d}</div>`).join('');
   for (let i = 0; i < firstDay; i++) calCells += '<div></div>';
   for (let d = 1; d <= daysInMonth; d++) {
-    const ds = yr + '-' + String(mo).padStart(2,'0') + '-' + String(d).padStart(2,'0');
-    const isSat  = isShabbat(ds);
+    const ds = `${yr}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isSat   = isShabbat(ds);
     const holInfo = getHolidayInfo(ds, nationalities);
-    const wSab   = calState.workedShabbats.has(ds);
-    const wHol   = calState.workedHolidays.has(ds);
+    const wSab    = calState.workedShabbats.has(ds);
+    const wHol    = calState.workedHolidays.has(ds);
     let cls = 'day';
     if      (wSab)   cls += ' wsab';
     else if (wHol)   cls += ' whol';
     else if (isSat)  cls += ' sat';
     else if (holInfo) cls += ' hol';
-    const tip = holInfo ? holInfo.name : (isSat ? 'שבת' : '');
-    calCells += `<div class="${cls}" title="${tip}">${d}</div>`;
+    calCells += `<div class="${cls}">${d}</div>`;
   }
-
-  // שורות שכר
-  const payRows = [
-    `<tr><td>שכר בסיס</td><td>₪${base.toLocaleString()}</td></tr>`,
-    nSab ? `<tr class="shab"><td>תוספת שבת (${nSab} × ₪${sabBonus})</td><td>₪${(nSab*sabBonus).toLocaleString()}</td></tr>` : '',
-    nHol ? `<tr class="holr"><td>תוספת חג (${nHol} × ₪${holBonus})</td><td>₪${(nHol*holBonus).toLocaleString()}</td></tr>` : '',
-    exp  ? `<tr><td>החזר הוצאות</td><td>₪${exp.toLocaleString()}</td></tr>` : '',
-    `<tr class="total-row"><td><strong>סה״כ לתשלום</strong></td><td><strong>₪${total.toLocaleString()}</strong></td></tr>`,
-  ].filter(Boolean).join('');
 
   const holUsed = calcHolUsed();
   const vacUsed = calcTotalVacUsed();
+  const seniorityText = calcSeniorityText(w.startDate);
 
   const html = `<!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
 <title>תלוש שכר – ${w.name||'עובדת'} – ${monthLabel}</title>
 <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;900&display=swap" rel="stylesheet"/>
 <style>
   *{box-sizing:border-box;margin:0;padding:0}
-  body{font-family:'Heebo',sans-serif;direction:rtl;background:#fff;color:#111;
-       padding:20px;font-size:13px;max-width:680px;margin:0 auto}
-  h1{font-size:22px;font-weight:900;color:#1a1f2e;margin-bottom:2px}
-  .sub{color:#5b7fff;font-size:15px;font-weight:700;margin-bottom:16px}
+  body{font-family:'Heebo',sans-serif;direction:rtl;background:#fff;color:#111;padding:24px;font-size:13px;max-width:720px;margin:0 auto}
+  .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:3px solid #5b7fff}
+  .header-logo{font-size:26px;font-weight:900;color:#5b7fff}
+  .header-sub{font-size:13px;color:#888;margin-top:2px}
+  .header-month .mo{font-size:20px;font-weight:900;color:#1a1f2e}
+  .header-month .issued{font-size:11px;color:#aaa;margin-top:2px}
+  .en{font-size:11px;color:#aaa;font-style:italic;direction:ltr}
+  .bilingual{display:flex;justify-content:space-between;align-items:baseline;line-height:2}
   .top-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
-  .box{background:#f7f9ff;border:1px solid #dde3f5;border-radius:8px;padding:12px}
-  .box-title{font-size:11px;color:#888;font-weight:700;margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
-  .box p{font-size:13px;color:#444;line-height:1.6}
-  .box .name{font-size:15px;font-weight:700;color:#111;margin-bottom:4px}
+  .box{background:#f7f9ff;border:1px solid #dde3f5;border-radius:10px;padding:14px}
+  .box-title{font-size:10px;color:#5b7fff;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px}
+  .box .name{font-size:16px;font-weight:900;color:#1a1f2e;margin-bottom:6px}
+  .box p{font-size:12px;color:#555}
+  .section-title{font-size:13px;font-weight:700;color:#1a1f2e;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #eee}
   table.pay{width:100%;border-collapse:collapse;margin-bottom:16px}
-  table.pay td{padding:6px 8px;border-bottom:1px solid #eee}
+  table.pay td{padding:7px 10px;border-bottom:1px solid #f0f0f0;font-size:13px}
   table.pay td:last-child{text-align:left;font-weight:600}
-  tr.shab td{color:#e65100}
-  tr.holr td{color:#5e35b1}
-  tr.total-row td{border-top:2px solid #5b7fff;padding-top:8px;font-size:15px;color:#5b7fff}
-  .cal-wrap{margin-bottom:14px}
-  .cal-title{font-size:13px;font-weight:700;margin-bottom:8px;color:#1a1f2e}
-  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px}
-  .cal-head{text-align:center;font-size:10px;font-weight:700;color:#888;padding:3px}
-  .day{text-align:center;padding:4px 2px;border-radius:4px;font-size:12px;
-       border:1px solid #eee;min-height:26px;line-height:18px}
+  tr.shab td{color:#e65100;background:#fff8f0}
+  tr.holr td{color:#5e35b1;background:#f9f7ff}
+  tr.gross-row td{background:#eff6ff;font-weight:700;color:#1d4ed8;font-size:14px}
+  tr.total-row td{background:#5b7fff;color:#fff;font-weight:900;font-size:15px}
+  tr.cost-row td{color:#555;font-size:12px}
+  tr.employer td{color:#059669;background:#f0fdf4}
+  .cal{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:8px}
+  .cal-head{text-align:center;font-size:10px;font-weight:700;color:#888;padding:4px}
+  .day{text-align:center;padding:5px 2px;border-radius:5px;font-size:11px;border:1px solid #eee;min-height:26px}
   .wsab{background:#fff3e0;color:#e65100;border-color:#f97316;font-weight:700}
   .whol{background:#ede7f6;color:#5e35b1;border-color:#818cf8;font-weight:700}
   .sat{color:#f97316;border-color:#ffe0cc}
   .hol{color:#818cf8;border-color:#e0e0ff}
-  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10px;color:#555;margin-top:6px}
-  .legend span{display:flex;align-items:center;gap:4px}
-  .swatch{width:12px;height:12px;border-radius:2px;display:inline-block}
-  .vac-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
-  .vac-box{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px}
-  .vac-box.hol-box{background:#f5f3ff;border-color:#ddd6fe}
-  .vac-box .vb-title{font-size:10px;color:#888;font-weight:700;margin-bottom:5px}
-  .vac-box .vb-nums{font-size:12px;color:#333}
-  .vac-box .vb-nums strong{color:#059669}
-  .vac-box.hol-box .vb-nums strong{color:#7c3aed}
-  .footer{text-align:center;font-size:10px;color:#aaa;border-top:1px solid #eee;padding-top:10px;margin-top:4px}
-  @media print{
-    body{padding:10px}
-    @page{size:A4 portrait;margin:10mm}
-  }
-  .print-btn{display:block;margin:0 auto 16px;padding:10px 28px;background:#5b7fff;
-             color:#fff;border:none;border-radius:8px;font-size:15px;font-family:'Heebo',sans-serif;
-             font-weight:700;cursor:pointer}
-  @media print{.print-btn{display:none}}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10px;color:#555;margin-bottom:16px}
+  .swatch{width:12px;height:12px;border-radius:2px;display:inline-block;margin-left:4px}
+  .vac-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+  .vac-box{border-radius:8px;padding:10px;border:1px solid #dde3f5}
+  .vac-box.vac{background:#f0fdf4;border-color:#bbf7d0}
+  .vac-box.hol{background:#f5f3ff;border-color:#ddd6fe}
+  .vb-title{font-size:10px;color:#888;font-weight:700;margin-bottom:6px}
+  .vb-val{font-size:18px;font-weight:900}
+  .vb-val.green{color:#059669}
+  .vb-val.purple{color:#7c3aed}
+  .vb-sub{font-size:11px;color:#888;margin-top:2px}
+  .sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:48px;margin-top:16px}
+  .sig-box{border-top:2px solid #333;padding-top:10px;text-align:center}
+  .sig-space{height:40px}
+  .footer{text-align:center;font-size:10px;color:#bbb;margin-top:20px;border-top:1px solid #f0f0f0;padding-top:12px}
+  .print-btn{display:block;margin:0 auto 20px;padding:10px 32px;background:#5b7fff;color:#fff;border:none;border-radius:8px;font-size:14px;font-family:'Heebo',sans-serif;font-weight:700;cursor:pointer}
+  @media print{.print-btn{display:none}@page{size:A4 portrait;margin:12mm}}
 </style>
 </head>
 <body>
 <button class="print-btn" onclick="window.print()">🖨️ הדפס / שמור PDF</button>
-<h1>תלוש שכר – שכרון ✦</h1>
-<div class="sub">${monthLabel}</div>
-
+<div class="header">
+  <div>
+    <div class="header-logo">שכרון ✦</div>
+    <div class="header-sub">תלוש שכר רשמי &nbsp;|&nbsp; <span class="en">Official Pay Slip</span></div>
+  </div>
+  <div class="header-month">
+    <div class="mo">${monthLabel}</div>
+    <div class="issued">הופק / Issued: ${new Date().toLocaleDateString('he-IL')}</div>
+  </div>
+</div>
 <div class="top-grid">
   <div class="box">
-    <div class="box-title">פרטי עובדת</div>
+    <div class="box-title">פרטי עובדת / Employee Details</div>
     <div class="name">${w.name||'—'}</div>
-    <p>דרכון: ${w.passport||'—'}<br>
-    התחלה: ${w.startDate||'—'}<br>
-    ויזה עד: ${w.visaDate||'—'}</p>
+    <p>
+      <span class="bilingual"><span>דרכון</span><span class="en">Passport: ${w.passport||'—'}</span></span>
+      <span class="bilingual"><span>תחילת עבודה</span><span class="en">Start: ${w.startDate||'—'}</span></span>
+      <span class="bilingual"><span>ויזה עד</span><span class="en">Visa until: ${w.visaDate||'—'}</span></span>
+      <span class="bilingual"><span>ותק</span><span class="en">Seniority: ${seniorityText}</span></span>
+    </p>
   </div>
   <div class="box">
-    <div class="box-title">פרטי תשלום</div>
-    <table class="pay" style="margin-bottom:0">${payRows}</table>
+    <div class="box-title">תנאי שכר / Salary Terms</div>
+    <p>
+      <span class="bilingual"><span>שכר בסיס / Base</span><span>₪${base.toLocaleString()}</span></span>
+      <span class="bilingual"><span>תוספת שבת / Shabbat</span><span>₪${sabBonus}</span></span>
+      <span class="bilingual"><span>תוספת חג / Holiday</span><span>₪${holBonus}</span></span>
+      <span class="bilingual"><span>ב"ל / Nat. Ins.</span><span>${r.bituach||0}%</span></span>
+      <span class="bilingual"><span>פנסיה / Pension</span><span>${r.pension||0}%</span></span>
+    </p>
   </div>
 </div>
-
-<div class="cal-wrap">
-  <div class="cal-title">📅 לוח שנה – ${monthLabel}</div>
-  <div class="cal">${calCells}</div>
-  <div class="legend">
-    <span><span class="swatch wsab"></span>שבת שעבדה</span>
-    <span><span class="swatch whol"></span>חג שעבדה</span>
-    <span style="color:#f97316">◆ שבת רגילה</span>
-    <span style="color:#818cf8">◆ חג (לא עבדה)</span>
-  </div>
+<div class="section-title">💰 פירוט תשלום / Payment Breakdown</div>
+<table class="pay">
+  <tr><td>שכר בסיס / Base Salary</td><td>₪${base.toLocaleString()}</td></tr>
+  ${nSab ? `<tr class="shab"><td>תוספת שבת / Shabbat (${nSab}×₪${sabBonus})</td><td>₪${(nSab*sabBonus).toLocaleString()}</td></tr>` : ''}
+  ${nHol ? `<tr class="holr"><td>תוספת חג / Holiday (${nHol}×₪${holBonus})</td><td>₪${(nHol*holBonus).toLocaleString()}</td></tr>` : ''}
+  ${exp  ? `<tr><td>החזר הוצאות / Expenses</td><td>₪${exp.toLocaleString()}</td></tr>` : ''}
+  <tr class="total-row"><td>סה"כ לעובדת / Total to Employee</td><td>₪${gross.toLocaleString()}</td></tr>
+</table>
+<div class="section-title">🏢 הוצאות מעסיק / Employer Costs</div>
+<table class="pay">
+  <tr class="cost-row"><td>ביטוח לאומי / National Insurance (${r.bituach||0}%)</td><td>₪${bituachAmt.toFixed(0)}</td></tr>
+  <tr class="cost-row"><td>פנסיה / Pension (${r.pension||0}%)</td><td>₪${pensionAmt.toFixed(0)}</td></tr>
+  <tr class="cost-row"><td>הבראה / Recreation (${havraDays} days/12)</td><td>₪${havraAmt.toFixed(0)}</td></tr>
+  <tr class="employer"><td>סה"כ הוצאות מעסיק / Total Employer</td><td>₪${totalEmployer.toFixed(0)}</td></tr>
+  <tr class="total-row"><td>עלות כוללת / Total Cost</td><td>₪${totalCost.toFixed(0)}</td></tr>
+</table>
+<div class="section-title">📅 לוח שנה / Calendar – ${monthLabel}</div>
+<div class="cal">${calCells}</div>
+<div class="legend">
+  <span><span class="swatch wsab"></span>שבת שעבדה / Worked Shabbat</span>
+  <span><span class="swatch whol"></span>חג שעבדה / Worked Holiday</span>
 </div>
-
 <div class="vac-row">
-  <div class="vac-box hol-box">
-    <div class="vb-title">🎉 ימי חג</div>
-    <div class="vb-nums">
-      זכאות: <strong>${w.holTotal||0}</strong> &nbsp;|&nbsp;
-      נוצל: <strong>${holUsed}</strong> &nbsp;|&nbsp;
-      נותר: <strong>${Math.max(0,(w.holTotal||0)-holUsed)}</strong>
-    </div>
+  <div class="vac-box hol">
+    <div class="vb-title">🎉 ימי חג / Holidays</div>
+    <div class="vb-val purple">${Math.max(0,(w.holTotal||0)-holUsed)}</div>
+    <div class="vb-sub">נותרו מתוך ${w.holTotal||0} (נוצלו ${holUsed})</div>
   </div>
-  <div class="vac-box">
-    <div class="vb-title">🏖️ ימי חופשה</div>
-    <div class="vb-nums">
-      זכאות: <strong>${w.vacTotal||0}</strong> &nbsp;|&nbsp;
-      נוצל: <strong>${vacUsed}</strong> &nbsp;|&nbsp;
-      נותר: <strong>${Math.max(0,(w.vacTotal||0)-vacUsed)}</strong>
-    </div>
+  <div class="vac-box vac">
+    <div class="vb-title">🏖️ ימי חופשה / Vacation</div>
+    <div class="vb-val green">${Math.max(0,(w.vacTotal||0)-vacUsed)}</div>
+    <div class="vb-sub">נותרו מתוך ${w.vacTotal||0} (נוצלו ${vacUsed})</div>
   </div>
 </div>
-
-<div class="footer">הופק ע"י שכרון ✦ &nbsp;•&nbsp; ${new Date().toLocaleDateString('he-IL')}</div>
-<script>window.onload=()=>{/* ready */}<\/script>
+<div style="margin-top:24px;padding-top:16px;border-top:1px solid #eee;">
+  <div class="section-title">✍️ אישור תשלום / Payment Confirmation</div>
+  <div style="font-size:12px;color:#555;margin-bottom:8px;">
+    אני מאשר/ת קבלת שכר עבור ${monthLabel} בסך ₪${gross.toLocaleString()}<br>
+    <span class="en">I confirm receipt of salary for ${monthLabel}: ₪${gross.toLocaleString()}</span>
+  </div>
+  <div class="sig-grid">
+    <div class="sig-box"><div class="sig-space"></div><div style="font-size:12px;font-weight:600;">חתימת המעסיק / Employer</div><div style="font-size:11px;color:#aaa;margin-top:6px;">תאריך / Date: ___________</div></div>
+    <div class="sig-box"><div class="sig-space"></div><div style="font-size:12px;font-weight:600;">חתימת העובדת / Employee</div><div style="font-size:11px;color:#aaa;margin-top:6px;">קיבלתי שכרי / Received in full</div></div>
+  </div>
+</div>
+<div class="footer">הופק ע"י שכרון ✦ • Generated by Shakaron • ${new Date().toLocaleDateString('he-IL')}</div>
 </body></html>`;
 
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url  = URL.createObjectURL(blob);
   const win  = window.open(url, '_blank');
   if (!win) {
-    // fallback: download as HTML file
     const a = document.createElement('a');
-    a.href = url; a.download = `שכרון_${w.name||'עובדת'}_${key}.html`;
+    a.href = url;
+    a.download = `תלוש_${w.name||'עובדת'}_${key}.html`;
     a.click();
   }
   setTimeout(() => URL.revokeObjectURL(url), 10000);
-  toast('הדוח נפתח – לחץ "הדפס / שמור PDF"');
+  toast('תלוש השכר נפתח – לחץ הדפס לשמירת PDF');
 }
-
-
-// ─────────────── FILE HANDLING ───────────────
 function handleFile(category, input) {
   if (!appData.files[category]) appData.files[category] = [];
   const files = Array.from(input.files);
@@ -800,10 +1076,17 @@ function calcTermination() {
 
   const start  = new Date(startDate);
   const end    = new Date(endDate);
-  const msYear = 1000 * 60 * 60 * 24 * 365.25;
-  const years  = (end - start) / msYear;
 
-  if (years < 0) { toast('תאריך סיום לפני תאריך התחלה'); return; }
+  // חישוב מדויק של שנים לפי תאריך (לא ms)
+  let years = end.getFullYear() - start.getFullYear();
+  const monthDiff = end.getMonth() - start.getMonth();
+  const dayDiff   = end.getDate()  - start.getDate();
+  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) years--;
+  const remainMonths = ((end.getFullYear() * 12 + end.getMonth()) -
+                        (start.getFullYear() * 12 + start.getMonth()));
+  const exactYears = remainMonths / 12 + (dayDiff >= 0 ? 0 : -1/365);
+
+  if (exactYears < 0) { toast('תאריך סיום לפני תאריך התחלה'); return; }
 
   const dailySalary = salary / 25;
   const rows = [];
@@ -811,17 +1094,17 @@ function calcTermination() {
 
   // 1. פיצויי פיטורים (רק בפיטורים / הסכמה)
   if (reason !== 'resigned') {
-    const severance = salary * years;
-    rows.push({ label: `פיצויי פיטורים (${years.toFixed(2)} שנים × ₪${salary.toLocaleString()})`, amount: severance, color: 'var(--danger)' });
+    const severance = salary * exactYears;
+    rows.push({ label: `פיצויי פיטורים (${exactYears.toFixed(2)} שנים × ₪${salary.toLocaleString()})`, amount: severance, color: 'var(--danger)' });
     total += severance;
   }
 
   // 2. הודעה מוקדמת
-  const noticeMonths = Math.min(Math.floor(years), 6);
+  const noticeMonths = Math.min(Math.floor(exactYears), 6);
   if (noticeMonths > 0) {
-    const noticePay = salary * noticeMonths / 12 * 12;
-    rows.push({ label: `הודעה מוקדמת (${noticeMonths} חודשים)`, amount: salary * noticeMonths, color: 'var(--warn)' });
-    total += salary * noticeMonths;
+    const noticePay = salary * noticeMonths;
+    rows.push({ label: `הודעה מוקדמת (${noticeMonths} חודשים)`, amount: noticePay, color: 'var(--warn)' });
+    total += noticePay;
   }
 
   // 3. פדיון חופשה
@@ -832,8 +1115,9 @@ function calcTermination() {
   }
 
   // 4. הבראה יחסית לשנה האחרונה
-  const lastYearFraction = years - Math.floor(years);
-  if (lastYearFraction > 0) {
+  const fullYears = Math.floor(exactYears);
+  const lastYearFraction = exactYears - fullYears;
+  if (lastYearFraction > 0.01) {
     const havraRate = appData.rates?.havraRate || 378;
     const havraDays = calcHavraDays(startDate);
     const havraPro  = havraRate * havraDays * lastYearFraction;
@@ -860,7 +1144,7 @@ function calcTermination() {
   setText('term-total', '₪' + total.toLocaleString('he-IL', {maximumFractionDigits:0}));
   document.getElementById('termination-result').style.display = 'block';
   document.getElementById('termination-placeholder').style.display = 'none';
-  window._termData = { rows, total, years, startDate, endDate, reason, salary };
+  window._termData = { rows, total, years: exactYears, startDate, endDate, reason, salary };
 }
 
 function generateTerminationPDF() {
@@ -1346,3 +1630,4 @@ function renderCostsScreen() {
   setText('cs-total-all',      '₪' + totalAll.toLocaleString());
   setText('cs-months-count',   months.length);
 }
+

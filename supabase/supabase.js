@@ -341,14 +341,17 @@ async function saveMonthToDb() {
 
 async function deleteMonthFromDb(key) {
   if (!key) key = document.getElementById('editing-month-key')?.value;
-  if (!key || !appData.months[key]) return;
+  if (!key) return;
   if (!confirm('למחוק את חודש ' + key + '?')) return;
 
-  delete appData.months[key];
-  saveLocal();
-  renderMonthsList();
-  updateWorkerStats();
-  updateVacBar();
+  // מחק מקומית אם קיים
+  if (appData.months[key]) {
+    delete appData.months[key];
+    saveLocal();
+    renderMonthsList();
+    updateWorkerStats();
+    updateVacBar();
+  }
   closeModal();
   safeToast('החודש נמחק');
 

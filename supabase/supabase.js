@@ -26,7 +26,10 @@ window.addEventListener('DOMContentLoaded', () => {
     });
 
     db.auth.getSession().then(({ data: { session } }) => {
-      if (!session) showLoginScreen();
+      if (!session) {
+        // הצג מסך כניסה רק אם לא מחובר — המדריך נשאר ב-background
+        setTimeout(showLoginScreen, 300);
+      }
     });
 
   } catch(e) {
@@ -43,6 +46,11 @@ function showLoginScreen() {
 function closeLoginScreen() {
   const s = document.getElementById('screen-login');
   if (s) s.style.display = 'none';
+  // ודא שמסך המדריך פעיל אחרי סגירת הכניסה
+  if (typeof showScreen === 'function') {
+    const active = document.querySelector('.screen.active');
+    if (!active) showScreen('screen-guide');
+  }
 }
 
 function updateAuthUI() {
@@ -159,6 +167,7 @@ async function onUserLoggedIn() {
 
     if (workers?.length > 0) {
       currentWorker = workers[0];
+      localStorage.setItem('shakaron_worker_id', currentWorker.id);
       await loadWorkerData(currentWorker.id);
       console.log('✓ Worker loaded:', currentWorker.name);
     } else {
@@ -228,7 +237,10 @@ async function saveWorkerToDb() {
   }
 
   if (result?.error) { console.error('Worker save error:', result.error.message); return; }
-  if (result?.data) currentWorker = result.data;
+  if (result?.data) {
+    currentWorker = result.data;
+    localStorage.setItem('shakaron_worker_id', currentWorker.id);
+  }
 }
 
 function workerFromDb(row) {
@@ -303,7 +315,14 @@ async function saveMonthToDb() {
   closeModal();
   safeToast('החודש נשמר ✓');
 
-  if (!db || !currentWorker?.id) return;
+  if (!db) return;
+
+  // טען currentWorker אם חסר
+  if (!currentWorker?.id) {
+    const cachedId = localStorage.getItem('shakaron_worker_id');
+    if (cachedId) currentWorker = { id: cachedId };
+  }
+  if (!currentWorker?.id) return;
 
   const { error } = await db.from('months').upsert({
     worker_id: currentWorker.id,
@@ -335,11 +354,20 @@ async function deleteMonthFromDb(key) {
 
   if (!db) return;
 
-  // אם אין currentWorker — נסה לטעון לפי passport
+  // אם אין currentWorker — נסה מה-localStorage
+  if (!currentWorker?.id) {
+    const cachedId = localStorage.getItem('shakaron_worker_id');
+    if (cachedId) currentWorker = { id: cachedId };
+  }
+
+  // אם עדיין אין — נסה לטעון לפי passport
   if (!currentWorker?.id && appData.worker?.passport) {
     const { data: w } = await db.from('workers')
       .select('id').eq('passport', appData.worker.passport).maybeSingle();
-    if (w) currentWorker = w;
+    if (w) {
+      currentWorker = w;
+      localStorage.setItem('shakaron_worker_id', w.id);
+    }
   }
 
   if (!currentWorker?.id) {

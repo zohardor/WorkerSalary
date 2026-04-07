@@ -268,6 +268,8 @@
     .cal-day:hover { background: var(--surface3); }
     .cal-day.empty { cursor: default; }
     .cal-day.today { border-color: var(--accent); }
+    .cal-day.custom-vac { background:rgba(52,211,153,0.15);border:1.5px solid var(--success);color:var(--success);font-weight:700; }
+    .vac-dot { font-size:8px;line-height:1; }
     .cal-day.shabbat-worked { background: rgba(249,115,22,0.25); border-color: var(--shabbat); color: var(--shabbat); font-weight: 700; }
     .cal-day.holiday-worked { background: rgba(129,140,248,0.25); border-color: var(--holiday); color: var(--holiday); font-weight: 700; }
     .cal-day.is-shabbat:not(.shabbat-worked) { color: var(--shabbat); opacity: 0.5; }
@@ -639,6 +641,7 @@
   </div>
   <button class="sync-btn" id="auth-btn" onclick="showScreen('screen-login')" title="התחברות">👤 כניסה</button>
   <button class="sync-btn" onclick="syncAllToCloud()" title="סנכרן לענן" id="sync-cloud-btn" style="display:none;">☁️ סנכרן</button>
+  <button class="sync-btn" onclick="toggleGuiTests()" title="בדיקות GUI" style="font-size:11px;color:var(--text3);border-color:transparent;">🧪</button>
 </div>
 
 <div class="main">
@@ -1383,6 +1386,11 @@
         <span id="signup-count-display">הצטרפו כבר <strong style="color:var(--accent);">0</strong> משפחות לרשימת המתנה</span>
       </div>
       <div style="text-align:center;margin-top:12px;" id="dev-toggle-area"></div>
+      <div style="text-align:center;margin-top:8px;">
+        <button class="btn btn-outline btn-sm" onclick="toggleGuiTests()" style="font-size:11px;color:var(--text3);">
+          🧪 GUI Tests (Ctrl+Shift+Q)
+        </button>
+      </div>
     </div>
 
   </div>
@@ -1449,8 +1457,12 @@
       <div class="cal-legend">
         <div class="legend-item"><div class="legend-dot" style="background:rgba(249,115,22,0.5);border:2px solid var(--shabbat)"></div> שבת שעבדה</div>
         <div class="legend-item"><div class="legend-dot" style="background:rgba(129,140,248,0.4);border:2px solid var(--holiday)"></div> חג שעבדה</div>
+        <div class="legend-item"><div class="legend-dot" style="background:rgba(52,211,153,0.15);border:1.5px solid var(--success)"></div> חג מותאם 🗓</div>
         <div class="legend-item"><div class="legend-dot" style="background:var(--surface3);border:1px solid var(--border)"></div> שבת רגילה</div>
         <div class="legend-item"><div class="legend-dot" style="background:transparent;border:1px solid var(--holiday)"></div> חג (לא עבדה)</div>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-top:8px;">
+        💡 לחץ על יום רגיל לסימון חג מותאם אישית • <span id="custom-vac-count">0</span> חגים מותאמים
       </div>
 
       <div style="margin-top:16px; display:flex; gap:20px; align-items:center; flex-wrap:wrap;">

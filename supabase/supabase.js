@@ -333,8 +333,27 @@ async function deleteMonthFromDb(key) {
   closeModal();
   safeToast('החודש נמחק');
 
-  if (!db || !currentWorker?.id) return;
-  await db.from('months').delete().eq('worker_id', currentWorker.id).eq('month_key', key);
+  if (!db) return;
+
+  // אם אין currentWorker — נסה לטעון לפי passport
+  if (!currentWorker?.id && appData.worker?.passport) {
+    const { data: w } = await db.from('workers')
+      .select('id').eq('passport', appData.worker.passport).maybeSingle();
+    if (w) currentWorker = w;
+  }
+
+  if (!currentWorker?.id) {
+    console.warn('deleteMonthFromDb: no currentWorker, deleted locally only');
+    return;
+  }
+
+  const { error } = await db.from('months')
+    .delete()
+    .eq('worker_id', currentWorker.id)
+    .eq('month_key', key);
+
+  if (error) console.error('Delete month error:', error.message);
+  else console.log('✓ Month deleted from DB:', key);
 }
 
 // ── LOAD DATA ─────────────────────────────────────────────────

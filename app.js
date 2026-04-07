@@ -255,6 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
   updateVacBar();
   applyPlanGates();
   renderAlerts();
+  showScreen('screen-guide'); // ודא שהמדריך פעיל בטעינה
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }

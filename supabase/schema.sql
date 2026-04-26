@@ -1,5 +1,5 @@
 -- ============================================================
--- שכרון – Supabase Schema
+-- מטפל – Supabase Schema
 -- הרץ את הקובץ הזה ב: Supabase Dashboard → SQL Editor
 -- ============================================================
 
@@ -187,3 +187,7 @@ CREATE INDEX IF NOT EXISTS idx_workers_user_id  ON workers(user_id);
 CREATE INDEX IF NOT EXISTS idx_months_worker_id ON months(worker_id);
 CREATE INDEX IF NOT EXISTS idx_months_key       ON months(month_key);
 CREATE INDEX IF NOT EXISTS idx_signups_email    ON signups(email);
+
+-- תיקון: הוספת עמודות חסרות לטבלת months
+ALTER TABLE months ADD COLUMN IF NOT EXISTS havra NUMERIC DEFAULT 0;
+ALTER TABLE months ADD COLUMN IF NOT EXISTS custom_vac_days JSONB DEFAULT '[]';

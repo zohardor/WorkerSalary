@@ -1,8 +1,8 @@
 {
-  "name": "שכרון – ניהול שכר עובדת זרה",
-  "short_name": "שכרון",
-  "description": "מערכת ניהול שכר לעובדת זרה עם לוח שנה ודוחות PDF",
-  "start_url": ".",
+  "name": "מטפל — ניהול שכר עובדת זרה",
+  "short_name": "מטפל",
+  "description": "ניהול חכם להעסקת עובדת זרה",
+  "start_url": "./app.html",
   "display": "standalone",
   "background_color": "#0f1117",
   "theme_color": "#1a1f2e",
@@ -24,5 +24,8 @@
     }
   ],
   "screenshots": [],
-  "categories": ["finance", "productivity"]
+  "categories": [
+    "finance",
+    "productivity"
+  ]
 }

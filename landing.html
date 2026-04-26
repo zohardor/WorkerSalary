@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>מטפל ✦ — ניהול חכם להעסקת עובדת זרה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Heebo:wght@300;400;500;600;700;900&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --ink: #e8eaf6;
+  --paper: #0f1117;
+  --cream: #1a1f2e;
+  --accent: #5b7fff;
+  --accent2: #818cf8;
+  --gold: #fbbf24;
+  --muted: #5a6280;
+  --border: rgba(255,255,255,0.08);
+  --green: #34d399;
+  --red: #f87171;
+  --surface: #1a1f2e;
+  --surface2: #232940;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Heebo', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.7;
+  overflow-x: hidden;
+}
+
+/* ── HERO ─────────────────────────────── */
+.hero {
+  background: #0a0d14;
+  color: var(--ink);
+  padding: 80px 20px 100px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.hero::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(91,127,255,0.15), transparent);
+  pointer-events: none;
+}
+
+.hero-badge {
+  display: inline-block;
+  background: rgba(91,127,255,0.15);
+  border: 1px solid rgba(91,127,255,0.3);
+  color: var(--accent2);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  padding: 5px 16px;
+  border-radius: 20px;
+  margin-bottom: 24px;
+  text-transform: uppercase;
+}
+
+.hero h1 {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: clamp(38px, 7vw, 72px);
+  font-weight: 900;
+  line-height: 1.1;
+  margin-bottom: 24px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.hero h1 span {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero p {
+  font-size: 18px;
+  color: rgba(232,234,246,0.6);
+  max-width: 560px;
+  margin: 0 auto 40px;
+  font-weight: 300;
+}
+
+.hero-cta {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 14px 32px;
+  border-radius: 8px;
+  font-family: 'Heebo', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: all .2s;
+}
+.btn-primary:hover { background: #4a6aee; transform: translateY(-1px); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid rgba(250,247,242,0.3);
+  padding: 14px 32px;
+  border-radius: 8px;
+  font-family: 'Heebo', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: all .2s;
+}
+.btn-outline:hover { border-color: rgba(232,234,246,0.6); }
+
+.hero-stats {
+  display: flex;
+  gap: 40px;
+  justify-content: center;
+  margin-top: 64px;
+  flex-wrap: wrap;
+}
+.hero-stat { text-align: center; }
+.hero-stat-val {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 36px;
+  font-weight: 900;
+  color: var(--accent2);
+  display: block;
+}
+.hero-stat-label { font-size: 13px; color: rgba(232,234,246,0.4); }
+
+/* ── COMPARISON ───────────────────────── */
+.section { padding: 80px 20px; max-width: 1100px; margin: 0 auto; }
+.section-tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--accent2);
+  margin-bottom: 12px;
+}
+.section-title {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 900;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+.section-sub {
+  font-size: 17px;
+  color: var(--muted);
+  max-width: 580px;
+  margin-bottom: 48px;
+  font-weight: 300;
+}
+
+.compare-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.compare-col {
+  background: var(--surface);
+  padding: 32px;
+}
+.compare-col.bad { background: rgba(248,113,113,0.05); }
+.compare-col.good { background: rgba(52,211,153,0.05); }
+
+.compare-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.compare-icon { font-size: 24px; }
+.compare-title { font-size: 17px; font-weight: 700; }
+.compare-subtitle { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+.compare-item {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+  align-items: flex-start;
+}
+.compare-item:last-child { border: none; }
+.compare-dot {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+.dot-bad { background: rgba(248,113,113,0.15); color: var(--red); }
+.dot-good { background: rgba(52,211,153,0.1); color: var(--green); }
+.compare-text { line-height: 1.5; }
+.compare-text strong { font-weight: 600; display: block; }
+.compare-text small { color: var(--muted); font-size: 12px; }
+
+/* ── SOLUTION ─────────────────────────── */
+.solution-bg {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.feature-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  transition: all .2s;
+}
+.feature-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(91,127,255,0.12); }
+
+.feature-icon {
+  font-size: 28px;
+  margin-bottom: 14px;
+  display: block;
+}
+.feature-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.feature-desc {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.feature-badge {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 12px;
+  background: rgba(91,127,255,0.1);
+  color: var(--accent2);
+}
+
+/* ── PRICING ──────────────────────────── */
+.pricing-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.price-card {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  background: var(--surface);
+  text-align: center;
+}
+.price-card.featured {
+  border-color: var(--accent);
+  background: #0a0d14;
+  color: var(--ink);
+  position: relative;
+}
+.price-tag {
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+  letter-spacing: .5px;
+}
+
+.price-name { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--muted); letter-spacing:.3px }
+.price-card.featured .price-name { color: rgba(250,247,242,0.6); }
+.price-amount {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.price-period { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.price-card.featured .price-period { color: rgba(232,234,246,0.4); }
+
+.price-features { list-style: none; text-align: right; margin-bottom: 28px; }
+.price-features li {
+  font-size: 14px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.price-card.featured .price-features li { border-color: rgba(250,247,242,0.1); }
+.price-features li:last-child { border: none; }
+.price-features li::before { content: '✓'; color: var(--green); font-weight: 700; font-size: 13px; }
+.price-features li.locked::before { content: '🔒'; }
+
+.price-cta {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  border-radius: 8px;
+  font-family: 'Heebo', sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: all .2s;
+}
+.price-cta-free { background: var(--surface2); color: var(--ink); border: 1px solid var(--border); }
+.price-cta-free:hover { border-color: var(--accent); }
+.price-cta-paid { background: var(--accent); color: #fff; border: none; }
+.price-cta-paid:hover { background: #a3330a; }
+
+/* ── TESTIMONIALS ─────────────────────── */
+.testimonials { background: #0a0d14; color: var(--ink); padding: 80px 20px; }
+.testimonials-inner { max-width: 900px; margin: 0 auto; }
+.testimonials-title {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: clamp(26px, 4vw, 40px);
+  font-weight: 900;
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.testi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.testi-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 24px;
+}
+.testi-text {
+  font-size: 15px;
+  font-weight: 300;
+  line-height: 1.7;
+  margin-bottom: 16px;
+  color: rgba(232,234,246,0.85);
+}
+.testi-text::before { content: '"'; font-family: 'Frank Ruhl Libre', serif; font-size: 40px; color: var(--accent); line-height: 0; vertical-align: -14px; margin-left: 4px; }
+.testi-author { font-size: 13px; color: rgba(232,234,246,0.4); }
+
+/* ── FAQ ──────────────────────────────── */
+.faq-list { max-width: 720px; margin: 0 auto; }
+.faq-item {
+  border-bottom: 1px solid var(--border);
+  padding: 20px 0;
+}
+.faq-q {
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.faq-q::after { content: '+'; font-size: 22px; color: var(--accent2); font-weight: 300; flex-shrink: 0; }
+.faq-item.open .faq-q::after { content: '−'; }
+.faq-a {
+  font-size: 15px;
+  color: var(--muted);
+  line-height: 1.7;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height .3s ease, padding .2s;
+}
+.faq-item.open .faq-a { max-height: 300px; padding-top: 12px; }
+
+/* ── FINAL CTA ────────────────────────── */
+.final-cta {
+  background: linear-gradient(135deg, #5b7fff 0%, #818cf8 100%);
+  padding: 80px 20px;
+  text-align: center;
+  color: #fff;
+}
+.final-cta h2 {
+  font-family: 'Frank Ruhl Libre', serif;
+  font-size: clamp(30px, 5vw, 52px);
+  font-weight: 900;
+  margin-bottom: 16px;
+}
+.final-cta p { font-size: 18px; opacity: .85; margin-bottom: 36px; font-weight: 300; }
+.btn-white {
+  background: #fff;
+  color: var(--accent);
+  border: none;
+  padding: 15px 36px;
+  border-radius: 8px;
+  font-family: 'Heebo', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  transition: all .2s;
+}
+.btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+
+/* ── FOOTER ───────────────────────────── */
+footer {
+  background: #0a0d14;
+  color: rgba(232,234,246,0.4);
+  text-align: center;
+  padding: 24px 20px;
+  font-size: 13px;
+}
+footer a { color: rgba(232,234,246,0.4); text-decoration: none; }
+
+/* ── RESPONSIVE ───────────────────────── */
+@media (max-width: 640px) {
+  .compare-grid { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .hero-stats { gap: 24px; }
+}
+
+/* ── ANIMATIONS ───────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.hero h1, .hero p, .hero-cta { animation: fadeUp .6s ease both; }
+.hero p { animation-delay: .1s; }
+.hero-cta { animation-delay: .2s; }
+</style>
+</head>
+<body>
+
+<!-- ══ HERO ══════════════════════════════ -->
+<section class="hero">
+  <div class="hero-badge">חדש — מטפל ✦</div>
+  <h1>העסקה ישירה<br>של עובדת זרה —<br><span>בלי הבלגן</span></h1>
+  <p>ניהול שכר, תלושים, חגים, ויזה, ומעקב הוצאות — הכל במקום אחד. בדיוק מה שחסר למשפחות שבחרו להעסיק ישירות.</p>
+  <div class="hero-cta">
+    <a href="https://zohardor.github.io/WorkerSalary/" class="btn-primary">התחל בחינם</a>
+    <a href="#compare" class="btn-outline">למה העסקה ישירה?</a>
+  </div>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat-val">₪3,200</span>
+      <span class="hero-stat-label">חיסכון חודשי ממוצע לעומת סוכנות</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-val">5 דקות</span>
+      <span class="hero-stat-label">להפקת תלוש שכר מקצועי</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-val">0 ₪</span>
+      <span class="hero-stat-label">עלות גרסה בסיסית</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ COMPARISON ════════════════════════ -->
+<div class="solution-bg" id="compare">
+<section class="section">
+  <div class="section-tag">השוואה</div>
+  <h2 class="section-title">חברת סיעוד מול העסקה ישירה</h2>
+  <p class="section-sub">שתי אפשרויות, הבדל של אלפי שקלים בחודש — וסיבה טובה לבחור נכון.</p>
+
+  <div class="compare-grid">
+    <!-- חברת סיעוד -->
+    <div class="compare-col bad">
+      <div class="compare-header">
+        <span class="compare-icon">🏢</span>
+        <div>
+          <div class="compare-title">חברת סיעוד</div>
+          <div class="compare-subtitle">~₪8,500–12,000 לחודש</div>
+        </div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-bad">✗</div>
+        <div class="compare-text">
+          <strong>עלות גבוהה</strong>
+          <small>תשלום לחברה + שכר + ביטוחים. הפרש של ₪2,000–4,000 לחודש לעומת העסקה ישירה</small>
+        </div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-bad">✗</div>
+        <div class="compare-text">
+          <strong>אין שליטה על העובדת</strong>
+          <small>החברה בוחרת מי מגיע, מחליטה על שינויים, ויכולה להחליף ללא התראה</small>
+        </div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-bad">✗</div>
+        <div class="compare-text">
+          <strong>תלות מלאה בחברה</strong>
+          <small>בעיה עם החברה = בעיה עם הסיעוד. אין גמישות</small>
+        </div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-bad">✗</div>
+        <div class="compare-text">
+          <strong>קשר אנושי קשה לפתח</strong>
+          <small>תחלופה גבוהה, אי-ודאות, קשה לבנות אמון לטווח ארוך</small>
+        </div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-bad">✗</div>
+        <div class="compare-text">
+          <strong>שקיפות נמוכה</strong>
+          <small>לא תמיד ברור מה העובדת מקבלת ומה הולך לחברה</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- העסקה ישירה -->
+    <div class="compare-col good">
+      <div class="compare-header">
+        <span class="compare-icon">🤝</span>
+        <div>
+          <div class="compare-title">העסקה ישירה</div>
+          <div class="compare-subtitle">~₪5,000–7,500 לחודש</div>
+        </div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-good">✓</div>
+        <div class="compare-text">
+          <strong>חיסכון משמעותי</strong>
+          <small>משלמים ישירות לעובדת. ₪2,000–4,000 פחות בחודש = ₪24,000–48,000 לשנה</small>
+        </div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-good">✓</div>
+        <div class="compare-text">
+          <strong>שליטה מלאה</strong>
+          <small>אתם בוחרים את העובדת, מגדירים את התנאים, ויוצרים קשר ישיר ואמיתי</small>
+        </div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-good">✓</div>
+        <div class="compare-text">
+          <strong>יציבות לטווח ארוך</strong>
+          <small>עובדת שנשארת שנים מכירה את הקשיש, את הבית, את השגרה</small>
+        </div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-good">✓</div>
+        <div class="compare-text">
+          <strong>קשר אנושי אמיתי</strong>
+          <small>המשפחה והעובדת בונים אמון הדדי. לעיתים קרובות קשר שנמשך שנים רבות</small>
+        </div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-good">✓</div>
+        <div class="compare-text">
+          <strong>שקיפות מלאה</strong>
+          <small>אתם יודעים בדיוק כמה משלמים, על מה, ומה מגיע לעובדת</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</div>
+
+<!-- ══ THE PROBLEM ════════════════════════ -->
+<section class="section">
+  <div class="section-tag">האתגר</div>
+  <h2 class="section-title">אבל... העסקה ישירה<br>מורכבת לניהול</h2>
+  <p class="section-sub">כל המשפחות שבחרו להעסיק ישירות נתקלות באותן בעיות. מטפל נבנה כדי לפתור אותן.</p>
+
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">📅</span>
+      <div class="feature-title">חישוב שכר חודשי מסובך</div>
+      <div class="feature-desc">שבתות, חגים ישראליים, חגים לפי לאום העובדת, החזר הוצאות — קשה לחשב נכון בכל חודש מחדש.</div>
+      <span class="feature-badge">✓ מטפל מחשב אוטומטית</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">📄</span>
+      <div class="feature-title">אין תלוש שכר מסודר</div>
+      <div class="feature-desc">בלי תלוש — אין הוכחה לתשלום. העובדת לא מבינה מה קיבלה, ואתם לא מוגנים משפטית.</div>
+      <span class="feature-badge">✓ תלוש PDF עברית + אנגלית</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">⚠️</span>
+      <div class="feature-title">ויזה שפגה בהפתעה</div>
+      <div class="feature-desc">ויזה שפגה = בעיה חוקית רצינית. רוב המשפחות לא עוקבות עד שזה קורה.</div>
+      <span class="feature-badge">✓ התראה 90/30 יום מראש</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">💼</span>
+      <div class="feature-title">הוצאות מעסיק לא מחושבות</div>
+      <div class="feature-desc">ביטוח לאומי, פנסיה, הבראה — מעסיקים רבים שוכחים או מחשבים לא נכון ומסתבכים.</div>
+      <span class="feature-badge">✓ חישוב אוטומטי לפי ותק</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🏁</span>
+      <div class="feature-title">סיום העסקה — בלבול גמור</div>
+      <div class="feature-desc">פיצויים, הודעה מוקדמת, פדיון חופשה, הבראה יחסית — מסובך לחשב ומסוכן לטעות.</div>
+      <span class="feature-badge">✓ דוח סיום אוטומטי</span>
+    </div>
+    <div class="feature-card">
+      <span class="feature-icon">🗂️</span>
+      <div class="feature-title">ניירת ומסמכים לכל מקום</div>
+      <div class="feature-desc">חוזה, דרכון, אישורים — מפוזרים בין מגירות, מיילים ואפליקציות שונות.</div>
+      <span class="feature-badge">✓ הכל במקום אחד</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══ PRICING ════════════════════════════ -->
+<div class="solution-bg">
+<section class="section" style="text-align:center;">
+  <div class="section-tag">תמחור</div>
+  <h2 class="section-title">מחיר הוגן, ערך אמיתי</h2>
+  <p class="section-sub" style="margin:0 auto 48px;">התחילו בחינם — שדרגו כשאתם מוכנים</p>
+
+  <div class="pricing-grid">
+    <!-- חינמי -->
+    <div class="price-card">
+      <div class="price-name">חינמי</div>
+      <div class="price-amount">₪0</div>
+      <div class="price-period">לעולם</div>
+      <ul class="price-features">
+        <li>פרטי עובדת מלאים</li>
+        <li>חודש חישוב אחד</li>
+        <li>לוח שנה + חגים</li>
+        <li>מדריך העסקה</li>
+        <li class="locked" style="color:var(--muted);">היסטוריה ללא הגבלה</li>
+        <li class="locked" style="color:var(--muted);">תלושי שכר PDF</li>
+        <li class="locked" style="color:var(--muted);">הוצאות מעסיק</li>
+      </ul>
+      <a href="https://zohardor.github.io/WorkerSalary/" class="price-cta price-cta-free">התחל בחינם</a>
+    </div>
+
+    <!-- פרימיום -->
+    <div class="price-card featured">
+      <div class="price-tag">הכי משתלם</div>
+      <div class="price-name">פרימיום שנתי</div>
+      <div class="price-amount">₪199</div>
+      <div class="price-period">לשנה • פחות מ-₪17 בחודש</div>
+      <ul class="price-features">
+        <li>הכל בחינמי</li>
+        <li>ניהול חודשי ללא הגבלה</li>
+        <li>תלושי שכר PDF מקצועיים</li>
+        <li>הוצאות מעסיק + הבראה</li>
+        <li>דוח סיום התקשרות</li>
+        <li>התראות ויזה + ב"ל</li>
+        <li>סנכרון ענן</li>
+      </ul>
+      <a href="https://zohardor.github.io/WorkerSalary/" class="price-cta price-cta-paid">הצטרפו לרשימת ההמתנה</a>
+    </div>
+  </div>
+
+  <p style="font-size:13px;color:var(--muted);margin-top:20px;">חוסכים ₪2,000–4,000 בחודש על העסקה ישירה — מטפל עולה ₪17 בחודש</p>
+</section>
+</div>
+
+<!-- ══ TESTIMONIALS ═══════════════════════ -->
+<section class="testimonials">
+  <div class="testimonials-inner">
+    <h2 class="testimonials-title">משפחות שכבר מנהלות נכון</h2>
+    <div class="testi-grid">
+      <div class="testi-card">
+        <div class="testi-text">סוף סוף אפליקציה שמבינה מה אנחנו צריכים. הלוח שנה עם החגים ההודיים חסך לי כאב ראש כל חודש.</div>
+        <div class="testi-author">— משפחה מתל אביב, מעסיקה עובדת הודית זה 3 שנים</div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-text">המדריך לבד שווה הכל. לא ידעתי כמה עניינים צריך לסגור עד שראיתי את הרשימה המלאה.</div>
+        <div class="testi-arch">— משפחה מחיפה, בתחילת תהליך הגיוס</div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-text">דוח סיום ההתקשרות חסך לנו ויכוח ועורך דין. הכל יצא מסודר עם חתימות ופירוט מלא.</div>
+        <div class="testi-author">— משפחה מירושלים, לאחר 4 שנות העסקה</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FAQ ════════════════════════════════ -->
+<section class="section">
+  <div class="section-tag">שאלות נפוצות</div>
+  <h2 class="section-title" style="text-align:center;margin-bottom:40px;">שאלות ותשובות</h2>
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q">האם אני צריך ניסיון בניהול שכר?</div>
+      <div class="faq-a">ממש לא. מטפל מחשב הכל אוטומטית — מזינים שכר בסיס, מסמנים שבתות וחגים, והאפליקציה מייצרת תלוש מקצועי תוך דקות. אין צורך בידע חשבונאי.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">כמה זמן לוקח להגדיר את המערכת?</div>
+      <div class="faq-a">בערך 10 דקות. מזינים פרטי עובדת, תנאי שכר, ושיעורי ביטוח לאומי — ומכאן הכל אוטומטי לכל חודש.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">האם התלוש מוכר משפטית?</div>
+      <div class="faq-a">מטפל מפיק תלוש מסודר עם פירוט מלא ושדות חתימה לשני הצדדים. מומלץ להתייעץ עם עורך דין לגבי דרישות ספציפיות, אך בפועל תלוש מסוג זה מקובל ומשמש כהוכחת תשלום.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">מה קורה לנתונים שלי?</div>
+      <div class="faq-a">הנתונים שמורים מקומית על המכשיר שלכם ובאופציה גם בענן מאובטח. אנחנו לא מוכרים מידע ולא משתמשים בו לפרסום.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">האם יש תמיכה בעברית?</div>
+      <div class="faq-a">כן — האפליקציה כולה בעברית, כולל המדריך, התלושים, ודוחות הסיום. תלושי השכר מופקים גם באנגלית לנוחות העובדת.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">האם אפשר לבטל את הפרימיום?</div>
+      <div class="faq-a">כן, בכל עת. הנתונים שלכם נשמרים גם אחרי הביטול.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ FINAL CTA ═══════════════════════════ -->
+<section class="final-cta">
+  <h2>מוכנים לנהל נכון?</h2>
+  <p>הצטרפו למשפחות שכבר חוסכות זמן וכסף עם מטפל</p>
+  <a href="https://zohardor.github.io/WorkerSalary/" class="btn-white">התחל בחינם — ללא כרטיס אשראי</a>
+</section>
+
+<!-- ══ FOOTER ══════════════════════════════ -->
+<footer>
+  <p>מטפל ✦ &nbsp;•&nbsp; ניהול חכם להעסקת עובדת זרה &nbsp;•&nbsp; <a href="https://zohardor.github.io/WorkerSalary/">כניסה לאפליקציה</a></p>
+  <p style="margin-top:6px;">אינו מהווה ייעוץ משפטי או חשבונאי</p>
+</footer>
+
+<script>
+// FAQ accordion
+document.querySelectorAll('.faq-q').forEach(q => {
+  q.addEventListener('click', () => {
+    const item = q.closest('.faq-item');
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  });
+});
+
+// Smooth scroll
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+</script>
+</body>
+</html>

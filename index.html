@@ -1,1537 +1,584 @@
 <!DOCTYPE html>
 <html lang="he" dir="rtl">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#1a1f2e" />
-  <meta name="description" content="מערכת ניהול שכר עובדת זרה" />
-  <!-- SHAKARON v2026-03-29 -->
-  <title>שכרון – ניהול שכר עובדת זרה</title>
-  <link rel="manifest" href="manifest.json" />
-  <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=Noto+Sans:wght@400;600&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg: #0f1117;
-      --surface: #1a1f2e;
-      --surface2: #232840;
-      --surface3: #2d3352;
-      --accent: #5b7fff;
-      --accent2: #a78bfa;
-      --success: #34d399;
-      --warn: #fbbf24;
-      --danger: #f87171;
-      --shabbat: #f97316;
-      --holiday: #818cf8;
-      --text: #e8eaf6;
-      --text2: #9ba4c0;
-      --text3: #5a6280;
-      --border: #2d3352;
-      --radius: 14px;
-      --shadow: 0 8px 32px rgba(0,0,0,0.4);
-    }
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>מטפל ✦ — ניהול שכר עובדת זרה</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;700;900&family=Heebo:wght@300;400;500;600;700;900&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg:       #0f1117;
+  --bg2:      #0a0d14;
+  --surface:  #1a1f2e;
+  --surface2: #232940;
+  --border:   rgba(255,255,255,0.08);
+  --text:     #e8eaf6;
+  --text2:    #9ba4c0;
+  --text3:    #5a6280;
+  --accent:   #5b7fff;
+  --accent2:  #818cf8;
+  --success:  #34d399;
+  --danger:   #f87171;
+  --warn:     #fbbf24;
+}
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
 
-    body {
-      font-family: 'Heebo', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      direction: rtl;
-    }
+body{
+  font-family:'Heebo',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  font-size:16px;
+  line-height:1.7;
+  overflow-x:hidden;
+}
 
-    /* ── TOP NAV ── */
-    .top-bar {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0 20px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      height: 62px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    .logo {
-      font-size: 22px;
-      font-weight: 900;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -0.5px;
-      white-space: nowrap;
-    }
-    .nav-tabs {
-      display: flex;
-      gap: 4px;
-      margin-right: auto;
-    }
-    .nav-tab {
-      padding: 8px 18px;
-      border-radius: 8px;
-      border: none;
-      background: transparent;
-      color: var(--text2);
-      font-size: 14px;
-      font-family: 'Heebo', sans-serif;
-      cursor: pointer;
-      transition: all .2s;
-      font-weight: 500;
-    }
-    .nav-tab.active, .nav-tab:hover {
-      background: var(--surface2);
-      color: var(--text);
-    }
-    .nav-tab.active { color: var(--accent); }
+/* NAV */
+.nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(10,13,20,0.9);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);
+  padding:14px 24px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.nav-logo{
+  font-family:'Frank Ruhl Libre',serif;
+  font-size:22px;font-weight:900;
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.nav-btn{
+  background:var(--accent);color:#fff;border:none;
+  padding:9px 22px;border-radius:8px;
+  font-family:'Heebo',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;text-decoration:none;transition:all .2s;
+}
+.nav-btn:hover{background:#4a6aee;transform:translateY(-1px)}
 
-    .sync-btn {
-      padding: 8px 14px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text2);
-      font-size: 13px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      transition: all .2s;
-    }
-    .sync-btn:hover { border-color: var(--accent); color: var(--accent); }
+/* HERO */
+.hero{
+  background:var(--bg2);
+  padding:90px 20px 100px;
+  text-align:center;
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(91,127,255,0.14),transparent);
+  pointer-events:none;
+}
+.hero-badge{
+  display:inline-block;
+  background:rgba(91,127,255,0.12);
+  border:1px solid rgba(91,127,255,0.3);
+  color:var(--accent2);
+  font-size:11px;font-weight:700;letter-spacing:1.5px;
+  padding:5px 16px;border-radius:20px;
+  margin-bottom:24px;text-transform:uppercase;
+}
+.hero h1{
+  font-family:'Frank Ruhl Libre',serif;
+  font-size:clamp(36px,7vw,70px);
+  font-weight:900;line-height:1.1;
+  margin-bottom:24px;
+  max-width:780px;margin-left:auto;margin-right:auto;
+}
+.hero h1 span{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+}
+.hero p{
+  font-size:18px;color:var(--text2);
+  max-width:540px;margin:0 auto 40px;font-weight:300;
+}
+.hero-cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-primary{
+  background:var(--accent);color:#fff;border:none;
+  padding:14px 32px;border-radius:8px;
+  font-family:'Heebo',sans-serif;font-size:16px;font-weight:700;
+  cursor:pointer;text-decoration:none;display:inline-block;transition:all .2s;
+}
+.btn-primary:hover{background:#4a6aee;transform:translateY(-1px)}
+.btn-ghost{
+  background:transparent;color:var(--text2);
+  border:1px solid var(--border);
+  padding:14px 32px;border-radius:8px;
+  font-family:'Heebo',sans-serif;font-size:16px;font-weight:500;
+  cursor:pointer;text-decoration:none;display:inline-block;transition:all .2s;
+}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
 
-    /* ── MAIN LAYOUT ── */
-    .main { padding: 24px 20px; max-width: 1100px; margin: 0 auto; min-height: calc(100vh - 62px); }
+.hero-stats{
+  display:flex;gap:40px;justify-content:center;
+  margin-top:64px;flex-wrap:wrap;
+}
+.hero-stat{text-align:center}
+.hero-stat-val{
+  font-family:'Frank Ruhl Libre',serif;
+  font-size:38px;font-weight:900;
+  color:var(--accent2);display:block;
+}
+.hero-stat-label{font-size:13px;color:var(--text3)}
 
-    .screen { display: none; }
-    .screen.active { display: block; }
+/* SECTIONS */
+.section{padding:80px 20px;max-width:1100px;margin:0 auto}
+.section-tag{
+  font-size:11px;font-weight:700;letter-spacing:2px;
+  text-transform:uppercase;color:var(--accent2);margin-bottom:12px;
+}
+.section-title{
+  font-family:'Frank Ruhl Libre',serif;
+  font-size:clamp(26px,4vw,42px);font-weight:900;
+  line-height:1.2;margin-bottom:16px;
+}
+.section-sub{
+  font-size:17px;color:var(--text2);
+  max-width:560px;margin-bottom:48px;font-weight:300;
+}
+.surface-bg{
+  background:var(--surface);
+  border-top:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+}
 
-    /* ── CARDS ── */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      margin-bottom: 20px;
-    }
-    .card-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 18px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .card-title .icon { font-size: 18px; }
+/* COMPARE */
+.compare-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:2px;
+  border-radius:14px;overflow:hidden;border:1px solid var(--border);
+}
+.compare-col{padding:28px 32px}
+.compare-col.bad{background:rgba(248,113,113,0.04)}
+.compare-col.good{background:rgba(52,211,153,0.04)}
+.compare-header{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.compare-icon{font-size:26px}
+.compare-title{font-size:17px;font-weight:700}
+.compare-subtitle{font-size:13px;color:var(--text3);margin-top:2px}
+.compare-item{
+  display:flex;gap:10px;padding:10px 0;
+  border-bottom:1px solid var(--border);
+  font-size:14px;align-items:flex-start;
+}
+.compare-item:last-child{border:none}
+.compare-dot{
+  width:20px;height:20px;border-radius:50%;
+  flex-shrink:0;margin-top:2px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;
+}
+.dot-bad{background:rgba(248,113,113,0.15);color:var(--danger)}
+.dot-good{background:rgba(52,211,153,0.12);color:var(--success)}
+.compare-text{line-height:1.5}
+.compare-text strong{font-weight:600;display:block}
+.compare-text small{color:var(--text3);font-size:12px}
 
-    /* ── FORM ── */
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    .form-grid.single { grid-template-columns: 1fr; }
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .form-group label {
-      font-size: 13px;
-      color: var(--text2);
-      font-weight: 500;
-    }
-    .form-group input, .form-group select, .form-group textarea {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 14px;
-      font-family: 'Heebo', sans-serif;
-      padding: 10px 12px;
-      transition: border-color .2s;
-      outline: none;
-      direction: rtl;
-    }
-    .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-      border-color: var(--accent);
-    }
-    .form-group textarea { resize: vertical; min-height: 70px; }
+/* FEATURES */
+.features-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;
+}
+.feature-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:24px;transition:all .2s;
+}
+.feature-card:hover{
+  border-color:var(--accent);transform:translateY(-2px);
+  box-shadow:0 8px 24px rgba(91,127,255,0.1);
+}
+.feature-icon{font-size:28px;margin-bottom:12px;display:block}
+.feature-title{font-size:16px;font-weight:700;margin-bottom:8px}
+.feature-desc{font-size:14px;color:var(--text2);line-height:1.6}
+.feature-badge{
+  display:inline-block;margin-top:10px;
+  font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;
+  background:rgba(91,127,255,0.1);color:var(--accent2);
+}
 
-    /* ── BUTTONS ── */
-    .btn {
-      padding: 10px 20px;
-      border-radius: 8px;
-      border: none;
-      font-family: 'Heebo', sans-serif;
-      font-size: 14px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all .2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: white;
-    }
-    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn-outline {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text2);
-    }
-    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-success { background: var(--success); color: #0f1117; }
-    .btn-danger { background: transparent; border: 1px solid var(--danger); color: var(--danger); }
-    .btn-sm { padding: 6px 12px; font-size: 12px; }
+/* PRICING */
+.pricing-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:20px;
+  max-width:680px;margin:0 auto;
+}
+.price-card{
+  border:1px solid var(--border);border-radius:14px;
+  padding:30px;background:var(--surface);text-align:center;
+}
+.price-card.featured{
+  border-color:var(--accent);background:var(--bg2);position:relative;
+}
+.price-tag{
+  position:absolute;top:-13px;left:50%;transform:translateX(-50%);
+  background:var(--accent);color:#fff;
+  font-size:11px;font-weight:700;padding:4px 14px;
+  border-radius:20px;white-space:nowrap;
+}
+.price-name{font-size:13px;font-weight:600;color:var(--text3);margin-bottom:16px}
+.price-amount{
+  font-family:'Frank Ruhl Libre',serif;
+  font-size:52px;font-weight:900;line-height:1;margin-bottom:4px;
+}
+.price-period{font-size:13px;color:var(--text3);margin-bottom:24px}
+.price-features{list-style:none;text-align:right;margin-bottom:24px}
+.price-features li{
+  font-size:14px;padding:7px 0;
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+}
+.price-features li:last-child{border:none}
+.price-features li::before{content:'✓';color:var(--success);font-weight:700;font-size:13px}
+.price-features li.locked::before{content:'🔒'}
+.price-cta{
+  display:block;width:100%;padding:12px;border-radius:8px;
+  font-family:'Heebo',sans-serif;font-weight:700;font-size:15px;
+  cursor:pointer;text-align:center;text-decoration:none;transition:all .2s;
+}
+.price-cta-free{background:var(--surface2);color:var(--text);border:1px solid var(--border)}
+.price-cta-free:hover{border-color:var(--accent)}
+.price-cta-paid{background:var(--accent);color:#fff;border:none}
+.price-cta-paid:hover{background:#4a6aee}
 
-    /* ── STATS ROW ── */
-    .stats-row {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .stat-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px;
-      text-align: center;
-    }
-    .stat-val {
-      font-size: 26px;
-      font-weight: 900;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .stat-label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+/* TESTIMONIALS */
+.testi-section{background:var(--bg2);padding:80px 20px}
+.testi-inner{max-width:900px;margin:0 auto}
+.testi-title{
+  font-family:'Frank Ruhl Libre',serif;
+  font-size:clamp(24px,4vw,38px);font-weight:900;
+  text-align:center;margin-bottom:48px;
+}
+.testi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.testi-card{
+  background:rgba(255,255,255,0.03);
+  border:1px solid var(--border);border-radius:12px;padding:24px;
+}
+.testi-text{
+  font-size:15px;font-weight:300;line-height:1.7;
+  margin-bottom:16px;color:var(--text2);
+}
+.testi-text::before{
+  content:'"';
+  font-family:'Frank Ruhl Libre',serif;font-size:40px;
+  color:var(--accent);line-height:0;vertical-align:-14px;margin-left:4px;
+}
+.testi-author{font-size:13px;color:var(--text3)}
 
-    /* ── FILE UPLOAD ── */
-    .file-drop {
-      border: 2px dashed var(--border);
-      border-radius: 10px;
-      padding: 24px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color .2s;
-      color: var(--text3);
-      font-size: 13px;
-    }
-    .file-drop:hover { border-color: var(--accent); color: var(--text2); }
-    .file-drop input[type=file] { display: none; }
-    .file-list { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
-    .file-item {
-      background: var(--surface2);
-      border-radius: 6px;
-      padding: 8px 12px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 13px;
-    }
-    .file-item-name { display: flex; align-items: center; gap: 8px; color: var(--text); }
+/* FAQ */
+.faq-list{max-width:700px;margin:0 auto}
+.faq-item{border-bottom:1px solid var(--border);padding:20px 0}
+.faq-q{
+  font-size:16px;font-weight:600;cursor:pointer;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+}
+.faq-q::after{content:'+';font-size:22px;color:var(--accent2);font-weight:300;flex-shrink:0}
+.faq-item.open .faq-q::after{content:'−'}
+.faq-a{
+  font-size:15px;color:var(--text2);line-height:1.7;
+  max-height:0;overflow:hidden;transition:max-height .3s,padding .2s;
+}
+.faq-item.open .faq-a{max-height:300px;padding-top:12px}
 
-    /* ── CALENDAR ── */
-    .cal-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-    .cal-month-label { font-size: 18px; font-weight: 700; }
-    .cal-nav { background: transparent; border: 1px solid var(--border); color: var(--text2); border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 16px; }
-    .cal-nav:hover { border-color: var(--accent); color: var(--accent); }
-    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-    .cal-day-name { text-align: center; font-size: 11px; color: var(--text3); padding: 6px 0; font-weight: 600; }
-    .cal-day {
-      aspect-ratio: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      border-radius: 8px;
-      font-size: 13px;
-      cursor: pointer;
-      border: 2px solid transparent;
-      transition: all .15s;
-      position: relative;
-      user-select: none;
-      min-height: 40px;
-    }
-    .cal-day:hover { background: var(--surface3); }
-    .cal-day.empty { cursor: default; }
-    .cal-day.today { border-color: var(--accent); }
-    .cal-day.custom-vac { background:rgba(52,211,153,0.15);border:1.5px solid var(--success);color:var(--success);font-weight:700; }
-    .vac-dot { font-size:8px;line-height:1; }
-    .cal-day.shabbat-worked { background: rgba(249,115,22,0.25); border-color: var(--shabbat); color: var(--shabbat); font-weight: 700; }
-    .cal-day.holiday-worked { background: rgba(129,140,248,0.25); border-color: var(--holiday); color: var(--holiday); font-weight: 700; }
-    .cal-day.is-shabbat:not(.shabbat-worked) { color: var(--shabbat); opacity: 0.5; }
-    .cal-day.is-holiday:not(.holiday-worked) { color: var(--holiday); opacity: 0.5; }
-    .cal-day .hol-dot {
-      width: 5px; height: 5px;
-      border-radius: 50%;
-      background: var(--holiday);
-      position: absolute;
-      bottom: 4px;
-    }
-    .cal-legend { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
-    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text2); }
-    .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+/* FINAL CTA */
+.final-cta{
+  background:linear-gradient(135deg,#4a5ccc,var(--accent2));
+  padding:80px 20px;text-align:center;color:#fff;
+}
+.final-cta h2{
+  font-family:'Frank Ruhl Libre',serif;
+  font-size:clamp(28px,5vw,50px);font-weight:900;margin-bottom:16px;
+}
+.final-cta p{font-size:18px;opacity:.85;margin-bottom:36px;font-weight:300}
+.btn-white{
+  background:#fff;color:var(--accent);border:none;
+  padding:15px 36px;border-radius:8px;
+  font-family:'Heebo',sans-serif;font-size:16px;font-weight:700;
+  cursor:pointer;text-decoration:none;display:inline-block;transition:all .2s;
+}
+.btn-white:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.25)}
 
-    /* ── MONTH LIST ── */
-    .month-entry {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px 20px;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      cursor: pointer;
-      transition: border-color .2s;
-    }
-    .month-entry:hover { border-color: var(--accent); }
-    .month-entry .me-date { font-weight: 700; font-size: 15px; min-width: 90px; }
-    .month-entry .me-info { flex: 1; display: flex; gap: 20px; flex-wrap: wrap; }
-    .me-chip {
-      background: var(--surface3);
-      border-radius: 20px;
-      padding: 3px 10px;
-      font-size: 12px;
-      color: var(--text2);
-    }
-    .me-chip.shab { background: rgba(249,115,22,0.2); color: var(--shabbat); }
-    .me-chip.hol { background: rgba(129,140,248,0.2); color: var(--holiday); }
-    .me-total { font-weight: 700; font-size: 17px; color: var(--success); white-space: nowrap; }
+/* FOOTER */
+footer{
+  background:var(--bg2);color:var(--text3);
+  text-align:center;padding:24px 20px;font-size:13px;
+}
+footer a{color:var(--text3);text-decoration:none}
+footer a:hover{color:var(--accent2)}
 
-    /* ── MODAL ── */
-    .modal-bg {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.7);
-      z-index: 200;
-      justify-content: center;
-      align-items: flex-start;
-      padding: 20px;
-      overflow-y: auto;
-    }
-    .modal-bg.open { display: flex; }
-    .modal {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 28px;
-      width: 100%;
-      max-width: 700px;
-      margin: auto;
-      box-shadow: var(--shadow);
-    }
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-    .modal-title { font-size: 18px; font-weight: 700; }
-    .modal-close { background: transparent; border: none; color: var(--text3); font-size: 22px; cursor: pointer; line-height: 1; }
-    .modal-close:hover { color: var(--danger); }
-    .modal-footer { margin-top: 24px; display: flex; gap: 10px; justify-content: flex-end; }
+/* RESPONSIVE */
+@media(max-width:640px){
+  .compare-grid{grid-template-columns:1fr}
+  .pricing-grid{grid-template-columns:1fr}
+  .hero-stats{gap:24px}
+  .nav{padding:12px 16px}
+}
 
-    /* ── VACATION TRACKER ── */
-    .vacation-bar { background: var(--surface2); border-radius: 8px; height: 8px; margin-top: 6px; overflow: hidden; }
-    .vacation-fill { height: 100%; border-radius: 8px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .4s; }
-
-    /* ── TOAST ── */
-    #toast {
-      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: 8px; padding: 10px 20px; font-size: 14px;
-      z-index: 999; opacity: 0; transition: opacity .3s;
-      pointer-events: none;
-    }
-    #toast.show { opacity: 1; }
-
-    /* ── REPORT PREVIEW ── */
-    #report-preview {
-      display: none;
-      background: white;
-      color: #111;
-      padding: 40px;
-      border-radius: 8px;
-      font-family: 'Heebo', sans-serif;
-      direction: rtl;
-      max-width: 750px;
-      margin: 0 auto;
-    }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 600px) {
-      .form-grid { grid-template-columns: 1fr; }
-      .stats-row { grid-template-columns: 1fr 1fr; }
-      .main { padding: 12px 10px; }
-
-      /* top-bar: לוגו + כפתורי action בשורה עליונה, טאבים בשורה תחתית */
-      .top-bar {
-        flex-wrap: wrap;
-        height: auto;
-        padding: 8px 12px 0;
-        gap: 6px;
-      }
-      .logo { font-size: 18px; }
-      .nav-tabs {
-        order: 3;
-        width: 100%;
-        overflow-x: auto;
-        gap: 2px;
-        padding-bottom: 8px;
-        margin-right: 0;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-      }
-      .nav-tabs::-webkit-scrollbar { display: none; }
-      .nav-tab {
-        padding: 6px 10px;
-        font-size: 12px;
-        white-space: nowrap;
-        flex-shrink: 0;
-      }
-      .sync-btn { font-size: 12px; padding: 6px 10px; }
-
-      /* כרטיסים */
-      .card { padding: 16px 14px; }
-      .card-title { font-size: 15px; }
-    }
-
-    /* ── VACATION DAYS COUNT ── */
-    .vac-summary {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-    .vac-pill {
-      background: var(--surface2);
-      border-radius: 20px;
-      padding: 4px 14px;
-      font-size: 13px;
-      border: 1px solid var(--border);
-    }
-    .vac-pill span { color: var(--accent); font-weight: 700; }
-
-    .section-actions { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-
-    /* ── PREMIUM LOCK ── */
-    .premium-gate {
-      position: relative;
-      pointer-events: none;
-      user-select: none;
-    }
-    .premium-gate::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      backdrop-filter: blur(4px);
-      -webkit-backdrop-filter: blur(4px);
-      background: rgba(15,17,23,0.55);
-      border-radius: var(--radius);
-      z-index: 10;
-    }
-    .premium-overlay {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 11;
-      gap: 10px;
-      pointer-events: all;
-      cursor: pointer;
-    }
-    .lock-icon {
-      font-size: 32px;
-      filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
-    }
-    .lock-label {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text);
-      background: rgba(91,127,255,0.15);
-      border: 1px solid var(--accent);
-      border-radius: 20px;
-      padding: 6px 18px;
-    }
-    /* ── GUIDE ── */
-    .guide-phase-btn {
-      padding: 8px 16px;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text2);
-      font-size: 13px;
-      font-family: 'Heebo', sans-serif;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all .2s;
-    }
-    .guide-phase-btn.active {
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      color: white;
-      border-color: transparent;
-    }
-    .guide-phase-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
-
-    .timeline { display: flex; flex-direction: column; gap: 0; }
-    .tl-item {
-      display: flex;
-      gap: 16px;
-      position: relative;
-    }
-    .tl-item:not(:last-child)::before {
-      content: '';
-      position: absolute;
-      right: 17px;
-      top: 40px;
-      bottom: -4px;
-      width: 2px;
-      background: linear-gradient(to bottom, var(--border), transparent);
-    }
-    .tl-dot {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 900;
-      font-size: 14px;
-      color: white;
-      flex-shrink: 0;
-      margin-top: 2px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-    }
-    .tl-content {
-      flex: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 16px 18px;
-      margin-bottom: 12px;
-      transition: border-color .2s;
-    }
-    .tl-content:hover { border-color: var(--accent); }
-    .tl-title {
-      font-size: 16px;
-      font-weight: 700;
-      margin-bottom: 0;
-      color: var(--text);
-      cursor: pointer;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      user-select: none;
-    }
-    .tl-title::after {
-      content: '›';
-      font-size: 20px;
-      color: var(--text3);
-      transition: transform .2s;
-      transform: rotate(90deg);
-    }
-    .tl-content.open .tl-title::after { transform: rotate(270deg); }
-    .tl-body {
-      overflow: hidden;
-      max-height: 0;
-      transition: max-height .35s ease, margin-top .2s;
-      margin-top: 0;
-    }
-    .tl-content.open .tl-body { max-height: 2000px; margin-top: 10px; }
-    .tl-checklist { display: flex; flex-direction: column; gap: 5px; margin-bottom: 10px; }
-    .chk {
-      font-size: 13px;
-      color: var(--text2);
-      padding: 4px 8px;
-      border-radius: 6px;
-      background: var(--surface2);
-      cursor: default;
-    }
-    .tl-tip {
-      font-size: 12px;
-      color: var(--accent);
-      background: rgba(91,127,255,0.1);
-      border-radius: 6px;
-      padding: 6px 10px;
-      margin-top: 6px;
-    }
-    .tl-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 12px;
-      color: var(--accent);
-      background: rgba(91,127,255,0.08);
-      border: 1px solid rgba(91,127,255,0.25);
-      border-radius: 6px;
-      padding: 5px 10px;
-      margin-top: 5px;
-      margin-left: 6px;
-      text-decoration: none;
-      transition: all .2s;
-    }
-    .tl-link:hover { background: rgba(91,127,255,0.18); border-color: var(--accent); }
-    .tl-facts {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-    .fact-item {
-      background: var(--surface2);
-      border-radius: 8px;
-      padding: 10px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-    .fact-num {
-      font-size: 24px;
-      font-weight: 900;
-      background: linear-gradient(135deg, var(--accent), var(--accent2));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .fact-item span:last-child { font-size: 11px; color: var(--text2); }
-    .link-card {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 14px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      text-decoration: none;
-      transition: all .2s;
-    }
-    .link-card:hover { border-color: var(--accent); color: var(--accent); }
-
-  </style>
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.hero h1{animation:fadeUp .5s ease both}
+.hero p{animation:fadeUp .5s .1s ease both}
+.hero-cta{animation:fadeUp .5s .2s ease both}
+</style>
 </head>
 <body>
 
-<div class="top-bar">
-  <div class="logo">שכרון ✦</div>
-  <div class="nav-tabs">
-    <button class="nav-tab active" onclick="showScreen('screen-guide')">📖 מדריך</button>
-    <button class="nav-tab" onclick="showScreen('screen-worker')">👤 פרטי עובדת</button>
-    <button class="nav-tab" onclick="showScreen('screen-salary')">📅 ניהול חודשי</button>
-    <button class="nav-tab" onclick="showScreen('screen-costs')">💼 הוצאות מעסיק 🔒</button>
-    <button class="nav-tab" onclick="showScreen('screen-premium')" style="color:var(--warn);">⭐ פרימיום</button>
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo">מטפל ✦</div>
+  <a href="app.html" class="nav-btn">כנס לאפליקציה →</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">חדש — מטפל ✦</div>
+  <h1>העסקה ישירה<br>של עובדת זרה —<br><span>בלי הבלגן</span></h1>
+  <p>ניהול שכר, תלושים, חגים, ויזה, ומעקב הוצאות — הכל במקום אחד. בדיוק מה שחסר למשפחות שבחרו להעסיק ישירות.</p>
+  <div class="hero-cta">
+    <a href="app.html" class="btn-primary">התחל בחינם</a>
+    <a href="#compare" class="btn-ghost">למה העסקה ישירה?</a>
   </div>
-  <button class="sync-btn" id="auth-btn" onclick="showScreen('screen-login')" title="התחברות">👤 כניסה</button>
-  <button class="sync-btn" onclick="syncAllToCloud()" title="סנכרן לענן" id="sync-cloud-btn" style="display:none;">☁️ סנכרן</button>
-  <button class="sync-btn" onclick="toggleGuiTests()" title="בדיקות GUI" style="font-size:11px;color:var(--text3);border-color:transparent;">🧪</button>
+  <div class="hero-stats">
+    <div class="hero-stat">
+      <span class="hero-stat-val">₪3,200</span>
+      <span class="hero-stat-label">חיסכון חודשי ממוצע לעומת סוכנות</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-val">5 דקות</span>
+      <span class="hero-stat-label">להפקת תלוש שכר מקצועי</span>
+    </div>
+    <div class="hero-stat">
+      <span class="hero-stat-val">₪0</span>
+      <span class="hero-stat-label">עלות גרסה בסיסית</span>
+    </div>
+  </div>
+</section>
+
+<!-- COMPARE -->
+<div class="surface-bg" id="compare">
+<section class="section">
+  <div class="section-tag">השוואה</div>
+  <h2 class="section-title">חברת סיעוד מול העסקה ישירה</h2>
+  <p class="section-sub">שתי אפשרויות, הבדל של אלפי שקלים בחודש — וסיבה טובה לבחור נכון.</p>
+  <div class="compare-grid">
+    <div class="compare-col bad">
+      <div class="compare-header">
+        <span class="compare-icon">🏢</span>
+        <div>
+          <div class="compare-title">חברת סיעוד</div>
+          <div class="compare-subtitle">~₪8,500–12,000 לחודש</div>
+        </div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-bad">✗</div>
+        <div class="compare-text"><strong>עלות גבוהה</strong><small>₪2,000–4,000 יותר בחודש מאשר העסקה ישירה</small></div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-bad">✗</div>
+        <div class="compare-text"><strong>אין שליטה על העובדת</strong><small>החברה בוחרת, מחליטה ויכולה להחליף ללא התראה</small></div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-bad">✗</div>
+        <div class="compare-text"><strong>תלות מלאה בחברה</strong><small>בעיה עם החברה = בעיה עם הסיעוד. אין גמישות</small></div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-bad">✗</div>
+        <div class="compare-text"><strong>תחלופה גבוהה</strong><small>קשה לבנות קשר אמיתי וארוך טווח</small></div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-bad">✗</div>
+        <div class="compare-text"><strong>חוסר שקיפות</strong><small>לא תמיד ברור מה מגיע לעובדת ומה הולך לחברה</small></div>
+      </div>
+    </div>
+    <div class="compare-col good">
+      <div class="compare-header">
+        <span class="compare-icon">🤝</span>
+        <div>
+          <div class="compare-title">העסקה ישירה</div>
+          <div class="compare-subtitle">~₪5,000–7,500 לחודש</div>
+        </div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-good">✓</div>
+        <div class="compare-text"><strong>חיסכון משמעותי</strong><small>₪24,000–48,000 פחות בשנה — ישירות לכיס</small></div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-good">✓</div>
+        <div class="compare-text"><strong>שליטה מלאה</strong><small>אתם בוחרים, מגדירים תנאים ויוצרים קשר ישיר</small></div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-good">✓</div>
+        <div class="compare-text"><strong>עצמאות מלאה</strong><small>אין תלות בצד שלישי, גמישות מלאה בניהול</small></div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-good">✓</div>
+        <div class="compare-text"><strong>יציבות וקשר אנושי</strong><small>עובדת שנשארת שנים מכירה את הקשיש ואת הבית</small></div>
+      </div>
+      <div class="compare-item">
+        <div class="compare-dot dot-good">✓</div>
+        <div class="compare-text"><strong>שקיפות מלאה</strong><small>יודעים בדיוק מה משלמים, על מה ולמי</small></div>
+      </div>
+    </div>
+  </div>
+</section>
 </div>
 
-<div class="main">
-
-  <!-- ══════════════ SCREEN 1: WORKER ══════════════ -->
-  <div id="screen-worker" class="screen">
-
-    <div class="stats-row" id="worker-stats">
-      <div class="stat-card">
-        <div class="stat-val" id="stat-name">—</div>
-        <div class="stat-label">שם העובדת</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" id="stat-base">₪0</div>
-        <div class="stat-label">שכר בסיס</div>
-      </div>
-      <div class="stat-card" style="border-color:rgba(129,140,248,0.4);">
-        <div class="stat-val" id="stat-hol-left" style="background:linear-gradient(135deg,var(--holiday),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">0</div>
-        <div class="stat-label">ימי חג נותרים</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px;"><span id="stat-hol-used">0</span> / <span id="stat-hol-total">0</span> שנוצלו</div>
-      </div>
-      <div class="stat-card" style="border-color:rgba(52,211,153,0.3);">
-        <div class="stat-val" id="stat-vac-left" style="background:linear-gradient(135deg,var(--success),#059669);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">0</div>
-        <div class="stat-label">ימי חופשה נותרים</div>
-        <div style="font-size:11px;color:var(--text3);margin-top:2px;"><span id="stat-vac-used">0</span> / <span id="stat-vac-total-top">0</span> שנוצלו</div>
-      </div>
+<!-- PROBLEM + SOLUTION -->
+<section class="section">
+  <div class="section-tag">האתגר</div>
+  <h2 class="section-title">אבל... העסקה ישירה<br>מורכבת לניהול</h2>
+  <p class="section-sub">כל משפחה שבחרה להעסיק ישירות נתקלת באותן בעיות. מטפל נבנה כדי לפתור אותן.</p>
+  <div class="features-grid">
+    <div class="feature-card">
+      <span class="feature-icon">📅</span>
+      <div class="feature-title">חישוב שכר חודשי מסובך</div>
+      <div class="feature-desc">שבתות, חגים ישראליים, חגים לפי לאום העובדת, החזר הוצאות — קשה לחשב נכון כל חודש.</div>
+      <span class="feature-badge">✓ מטפל מחשב אוטומטית</span>
     </div>
-
-    <!-- התראות חשובות -->
-    <div id="alerts-container"></div>
-
-    <div class="card">
-      <div class="form-grid">
-        <div class="form-group">
-          <label>שם מלא</label>
-          <input type="text" id="w-name" placeholder="שם פרטי ומשפחה" oninput="saveWorkerToDb()" />
-        </div>
-        <div class="form-group">
-          <label>מספר דרכון</label>
-          <input type="text" id="w-passport" placeholder="A1234567" oninput="saveWorkerToDb()" />
-        </div>
-        <div class="form-group">
-          <label>לאומיות / מדינת מוצא</label>
-          <select id="w-nationality" onchange="saveWorkerToDb()">
-            <option value="india">הודו 🇮🇳</option>
-            <option value="philippines">פיליפינים 🇵🇭</option>
-            <option value="nepal">נפאל 🇳🇵</option>
-            <option value="myanmar">מיאנמר 🇲🇲</option>
-            <option value="srilanka">סרי לנקה 🇱🇰</option>
-            <option value="other">אחר</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>תאריך תחילת עבודה</label>
-          <input type="date" id="w-start" oninput="saveWorkerToDb()" />
-        </div>
-        <div class="form-group">
-          <label>תאריך סיום ויזה</label>
-          <input type="date" id="w-visa" oninput="saveWorkerToDb()" />
-        </div>
-        <div class="form-group">
-          <label>טלפון</label>
-          <input type="text" id="w-phone" placeholder="050-0000000" oninput="saveWorkerToDb()" />
-        </div>
-      </div>
+    <div class="feature-card">
+      <span class="feature-icon">📄</span>
+      <div class="feature-title">אין תלוש שכר מסודר</div>
+      <div class="feature-desc">בלי תלוש — אין הוכחת תשלום. העובדת לא מבינה מה קיבלה ואתם לא מוגנים.</div>
+      <span class="feature-badge">✓ תלוש PDF מקצועי בלחיצה</span>
     </div>
-
-    <div class="card">
-      <div class="card-title"><span class="icon">💰</span> תנאי שכר</div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label>שכר בסיס ברוטו (₪)</label>
-          <input type="number" id="w-base" placeholder="7000" oninput="saveWorkerToDb()" />
-        </div>
-        <div class="form-group">
-          <label>תוספת שבת (₪ לכל שבת)</label>
-          <input type="number" id="w-shabbat-bonus" placeholder="200" oninput="saveWorkerToDb()" />
-        </div>
-        <div class="form-group">
-          <label>תוספת חג (₪ לכל חג)</label>
-          <input type="number" id="w-holiday-bonus" placeholder="150" oninput="saveWorkerToDb()" />
-        </div>
-        <div class="form-group">
-          <label>ימי מחלה שנתיים</label>
-          <input type="number" id="w-sick-total" placeholder="18" oninput="saveWorkerToDb()" />
-        </div>
-      </div>
-
-      <!-- ימי חג שנתיים -->
-      <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
-        <div style="font-size:14px; font-weight:700; color:var(--holiday); margin-bottom:12px;">🎉 ימי חג שנתיים</div>
-        <div class="form-grid" style="margin-bottom:12px;">
-          <div class="form-group">
-            <label>זכאות ימי חג שנתיים</label>
-            <input type="number" id="w-hol-total" placeholder="12" oninput="saveWorkerToDb()" />
-          </div>
-        </div>
-        <div style="font-size:13px; color:var(--text2); margin-bottom:6px;">
-          ניצול ימי חג – כל חג שעבדה בו נספר כיום חג שנוצל
-        </div>
-        <div class="vac-summary">
-          <div class="vac-pill" style="border-color:rgba(129,140,248,0.4);">זכאות: <span id="hol-total-disp">0</span> ימים</div>
-          <div class="vac-pill" style="border-color:rgba(129,140,248,0.4);">נוצל: <span id="hol-used-disp">0</span> ימים</div>
-          <div class="vac-pill" style="border-color:rgba(129,140,248,0.4);color:var(--holiday);">נותר: <span id="hol-left-disp">0</span> ימים</div>
-        </div>
-        <div class="vacation-bar" style="margin-top:10px; max-width:400px;">
-          <div class="vacation-fill" id="hol-bar" style="width:0%; background:linear-gradient(90deg,var(--holiday),var(--accent2));"></div>
-        </div>
-      </div>
-
-      <!-- ימי חופשה שנתיים -->
-      <div style="margin-top:20px; padding-top:16px; border-top:1px solid var(--border);">
-        <div style="font-size:14px; font-weight:700; color:var(--success); margin-bottom:12px;">🏖️ ימי חופשה שנתיים</div>
-        <div class="form-grid" style="margin-bottom:12px;">
-          <div class="form-group">
-            <label>זכאות ימי חופשה שנתיים</label>
-            <input type="number" id="w-vac-total" placeholder="14" oninput="saveWorkerToDb()" />
-          </div>
-        </div>
-        <div style="font-size:13px; color:var(--text2); margin-bottom:6px;">
-          ימי חופשה מחושבים מהשדה הידני בכל חודש
-        </div>
-        <div class="vac-summary">
-          <div class="vac-pill">זכאות: <span id="vac-total-disp">0</span> ימים</div>
-          <div class="vac-pill">נוצל: <span id="vac-used-disp">0</span> ימים</div>
-          <div class="vac-pill" style="color:var(--success);">נותר: <span id="vac-left-disp">0</span> ימים</div>
-        </div>
-        <div class="vacation-bar" style="margin-top:10px; max-width:400px;">
-          <div class="vacation-fill" id="vac-bar" style="width:0%"></div>
-        </div>
-      </div>
+    <div class="feature-card">
+      <span class="feature-icon">⚠️</span>
+      <div class="feature-title">ויזה שפגה בהפתעה</div>
+      <div class="feature-desc">ויזה שפגה = בעיה חוקית רצינית. רוב המשפחות לא עוקבות עד שזה קורה.</div>
+      <span class="feature-badge">✓ התראה 90/30 יום מראש</span>
     </div>
-
-    <div class="card" id="docs-card" style="position:relative;">
-      <div class="card-title"><span class="icon">📎</span> מסמכים</div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
-        <div>
-          <div style="font-size:13px; color:var(--text2); margin-bottom:8px;">📷 צילום דרכון</div>
-          <div class="file-drop" onclick="document.getElementById('file-passport').click()">
-            <input type="file" id="file-passport" accept="image/*,application/pdf" onchange="handleFile('passport',this)" />
-            <div>לחץ להוספת צילום דרכון</div>
-          </div>
-          <div class="file-list" id="list-passport"></div>
-        </div>
-        <div>
-          <div style="font-size:13px; color:var(--text2); margin-bottom:8px;">📄 חוזה עבודה</div>
-          <div class="file-drop" onclick="document.getElementById('file-contract').click()">
-            <input type="file" id="file-contract" accept="image/*,application/pdf" onchange="handleFile('contract',this)" />
-            <div>לחץ להוספת חוזה</div>
-          </div>
-          <div class="file-list" id="list-contract"></div>
-        </div>
-        <div>
-          <div style="font-size:13px; color:var(--text2); margin-bottom:8px;">📋 נספחים לחוזה</div>
-          <div class="file-drop" onclick="document.getElementById('file-annex').click()">
-            <input type="file" id="file-annex" accept="image/*,application/pdf" multiple onchange="handleFile('annex',this)" />
-            <div>לחץ להוספת נספחים (ניתן לבחור מספר קבצים)</div>
-          </div>
-          <div class="file-list" id="list-annex"></div>
-        </div>
-        <div>
-          <div style="font-size:13px; color:var(--text2); margin-bottom:8px;">🗂️ מסמכים נוספים</div>
-          <div class="file-drop" onclick="document.getElementById('file-other').click()">
-            <input type="file" id="file-other" accept="*/*" multiple onchange="handleFile('other',this)" />
-            <div>לחץ להוספת מסמכים</div>
-          </div>
-          <div class="file-list" id="list-other"></div>
-        </div>
-      </div>
-      <div style="margin-top:16px; text-align:left;">
-        <button class="btn btn-outline btn-sm" onclick="exportJSON()">⬇️ ייצא נתונים (JSON)</button>
-        <button class="btn btn-outline btn-sm" onclick="importJSON()" style="margin-right:8px;">⬆️ ייבא נתונים</button>
-        <input type="file" id="import-file" accept=".json" style="display:none" onchange="doImport(this)" />
-      </div>
-      <!-- Premium gate overlay (shown for free users) -->
-      <div id="docs-gate" class="premium-gate" style="position:absolute;inset:0;border-radius:var(--radius);display:none;">
-        <div class="premium-overlay" onclick="showScreen('screen-premium')">
-          <div class="lock-icon">🔒</div>
-          <div class="lock-label">צירוף מסמכים – פרימיום בלבד</div>
-        </div>
-      </div>
+    <div class="feature-card">
+      <span class="feature-icon">💼</span>
+      <div class="feature-title">הוצאות מעסיק לא מחושבות</div>
+      <div class="feature-desc">ביטוח לאומי, פנסיה, הבראה — מעסיקים רבים מחשבים לא נכון ומסתבכים.</div>
+      <span class="feature-badge">✓ חישוב אוטומטי לפי ותק</span>
     </div>
-
-  </div>
-
-  <!-- ══════════════ SCREEN 2: SALARY ══════════════ -->
-  <div id="screen-salary" class="screen">
-    <div class="section-actions">
-      <button class="btn btn-primary" onclick="openMonthModal()">＋ הוספת חודש</button>
-      <button class="btn btn-outline" onclick="openMonthModal(null, true)">📊 דוח שכר (PDF)</button>
-      <span id="free-months-notice" style="font-size:12px;color:var(--text3);align-self:center;display:none;">
-        🔒 גרסה חינמית — חודש אחד בלבד. <a href="#" onclick="showScreen('screen-premium');return false;" style="color:var(--accent);">שדרג לפרימיום</a>
-      </span>
+    <div class="feature-card">
+      <span class="feature-icon">🏁</span>
+      <div class="feature-title">סיום העסקה — בלבול גמור</div>
+      <div class="feature-desc">פיצויים, הודעה מוקדמת, פדיון חופשה — מסובך לחשב ומסוכן לטעות.</div>
+      <span class="feature-badge">✓ דוח סיום אוטומטי מלא</span>
     </div>
-    <div id="months-list">
-      <div style="color:var(--text3); text-align:center; padding:40px;">אין חודשים מוגדרים. לחץ "הוספת חודש" להתחיל.</div>
+    <div class="feature-card">
+      <span class="feature-icon">🗂️</span>
+      <div class="feature-title">ניירת מפוזרת</div>
+      <div class="feature-desc">חוזה, דרכון, אישורים — מפוזרים בין מגירות, מיילים ואפליקציות שונות.</div>
+      <span class="feature-badge">✓ הכל במקום אחד</span>
     </div>
   </div>
+</section>
 
-  <!-- ══════════════ SCREEN 3: EMPLOYER COSTS ══════════════ -->
-  <div id="screen-costs" class="screen">
-
-    <!-- סיכום מצטבר -->
-    <div class="stats-row" id="costs-stats-row">
-      <div class="stat-card">
-        <div class="stat-val" id="cs-total-salary">₪0</div>
-        <div class="stat-label">סה״כ שכר ששולם</div>
-      </div>
-      <div class="stat-card" style="border-color:rgba(251,191,36,0.4);">
-        <div class="stat-val" id="cs-total-employer" style="background:linear-gradient(135deg,#f59e0b,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">₪0</div>
-        <div class="stat-label">סה״כ הוצ׳ מעסיק</div>
-      </div>
-      <div class="stat-card" style="border-color:rgba(248,113,113,0.3);">
-        <div class="stat-val" id="cs-total-all" style="background:linear-gradient(135deg,var(--danger),#dc2626);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">₪0</div>
-        <div class="stat-label">עלות כוללת למעסיק</div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-val" id="cs-months-count">0</div>
-        <div class="stat-label">חודשים מנוהלים</div>
-      </div>
+<!-- PRICING -->
+<div class="surface-bg">
+<section class="section" style="text-align:center;">
+  <div class="section-tag">תמחור</div>
+  <h2 class="section-title">מחיר הוגן, ערך אמיתי</h2>
+  <p class="section-sub" style="margin:0 auto 48px;">התחילו בחינם — שדרגו כשאתם מוכנים</p>
+  <div class="pricing-grid">
+    <div class="price-card">
+      <div class="price-name">חינמי</div>
+      <div class="price-amount">₪0</div>
+      <div class="price-period">לעולם</div>
+      <ul class="price-features">
+        <li>פרטי עובדת מלאים</li>
+        <li>חודש חישוב אחד</li>
+        <li>לוח שנה + חגים</li>
+        <li>מדריך העסקה מלא</li>
+        <li class="locked" style="color:var(--text3)">היסטוריה ללא הגבלה</li>
+        <li class="locked" style="color:var(--text3)">תלושי שכר PDF</li>
+        <li class="locked" style="color:var(--text3)">הוצאות מעסיק</li>
+      </ul>
+      <a href="app.html" class="price-cta price-cta-free">התחל בחינם</a>
     </div>
-
-    <!-- הגדרות שיעורי מעסיק (שמורים בפרופיל העובדת) -->
-    <div class="card">
-      <div class="card-title"><span class="icon">⚙️</span> הגדרת שיעורי הוצאות מעסיק</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">הגדר פעם אחת – יחושב אוטומטית לכל החודשים</div>
-      <div class="form-grid">
-        <div class="form-group">
-          <label>ביטוח לאומי – חלק מעסיק (%)</label>
-          <input type="number" id="r-bituach" placeholder="3.55" step="0.01" />
-        </div>
-        <div class="form-group">
-          <label>פנסיה / קרן השתלמות – מעסיק (%)</label>
-          <input type="number" id="r-pension" placeholder="6" step="0.01" />
-        </div>
-        <div class="form-group">
-          <label>תעריף יום הבראה (₪)</label>
-          <input type="number" id="r-havra-rate" placeholder="378" step="1" oninput="updateHavraPreview()" />
-        </div>
-        <div class="form-group">
-          <label>חודש תשלום הבראה</label>
-          <select id="r-havra-month" onchange="updateHavraPreview()">
-            <option value="7">יולי</option>
-            <option value="8">אוגוסט</option>
-            <option value="6">יוני</option>
-            <option value="9">ספטמבר</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- הבראה לפי ותק -->
-      <div style="margin-top:16px;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
-        <div style="font-size:13px;font-weight:700;color:var(--warn);margin-bottom:10px;">🌴 הבראה לפי ותק (חישוב אוטומטי)</div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:10px;">
-          <div style="background:var(--surface);border-radius:8px;padding:8px;text-align:center;">
-            <div style="font-size:10px;color:var(--text3);margin-bottom:2px;">שנה 1</div>
-            <div style="font-weight:700;color:var(--text);">6 ימים</div>
-            <div id="havra-y1" style="font-size:12px;color:var(--warn);">₪0</div>
-          </div>
-          <div style="background:var(--surface);border-radius:8px;padding:8px;text-align:center;">
-            <div style="font-size:10px;color:var(--text3);margin-bottom:2px;">שנה 2–3</div>
-            <div style="font-weight:700;color:var(--text);">7 ימים</div>
-            <div id="havra-y2" style="font-size:12px;color:var(--warn);">₪0</div>
-          </div>
-          <div style="background:var(--surface);border-radius:8px;padding:8px;text-align:center;">
-            <div style="font-size:10px;color:var(--text3);margin-bottom:2px;">שנה 4+</div>
-            <div style="font-weight:700;color:var(--text);">8 ימים</div>
-            <div id="havra-y3" style="font-size:12px;color:var(--warn);">₪0</div>
-          </div>
-          <div style="background:var(--surface);border-radius:8px;padding:8px;text-align:center;border:1px solid var(--warn);">
-            <div style="font-size:10px;color:var(--text3);margin-bottom:2px;">ותק נוכחי</div>
-            <div id="havra-seniority-days" style="font-weight:900;color:var(--warn);font-size:16px;">—</div>
-            <div id="havra-current" style="font-size:12px;color:var(--warn);">₪0</div>
-          </div>
-        </div>
-        <div style="font-size:12px;color:var(--text3);">
-          💡 תאריך תחילת העבודה: <strong id="havra-start-disp" style="color:var(--text2);">—</strong> |
-          ותק: <strong id="havra-years-disp" style="color:var(--accent);">—</strong>
-        </div>
-      </div>
-
-      <div style="margin-top:14px;display:flex;gap:10px;align-items:center;">
-        <button class="btn btn-primary" onclick="saveRatesToDb()">💾 שמור הגדרות</button>
-        <span id="rates-save-msg" style="font-size:13px;color:var(--success);display:none;">✓ נשמר בהצלחה</span>
-      </div>
-    </div>
-
-    <!-- טבלה חודשית מפורטת -->
-    <div class="card">
-      <div class="card-title"><span class="icon">📋</span> פירוט חודשי – הוצאות מעסיק</div>
-      <div id="costs-table-container">
-        <div style="color:var(--text3);text-align:center;padding:32px;">אין חודשים מוגדרים עדיין</div>
-      </div>
-    </div>
-
-    <!-- דוח סיום התקשרות -->
-    <div class="card" style="border-color:rgba(248,113,113,0.3);">
-      <div class="card-title"><span class="icon">🏁</span> דוח סיום התקשרות</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:16px;">חישוב אוטומטי של כל הזכויות המגיעות לעובדת בסיום</div>
-
-      <div class="form-grid" style="margin-bottom:16px;">
-        <div class="form-group">
-          <label>תאריך סיום העסקה</label>
-          <input type="date" id="term-end-date" oninput="calcTermination()" />
-        </div>
-        <div class="form-group">
-          <label>סיבת סיום</label>
-          <select id="term-reason" onchange="calcTermination()">
-            <option value="fired">פיטורים</option>
-            <option value="resigned">התפטרות</option>
-            <option value="mutual">הסכמה הדדית</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>שכר אחרון (₪)</label>
-          <input type="number" id="term-salary" placeholder="שכר בסיס" oninput="calcTermination()" />
-        </div>
-        <div class="form-group">
-          <label>ימי חופשה שלא נוצלו</label>
-          <input type="number" id="term-unused-vac" placeholder="0" value="0" oninput="calcTermination()" />
-        </div>
-      </div>
-
-      <!-- תוצאות -->
-      <div id="termination-result" style="display:none;">
-        <div style="background:var(--surface2);border-radius:10px;padding:16px;margin-bottom:16px;">
-          <div style="font-size:14px;font-weight:700;margin-bottom:12px;color:var(--text);">📊 פירוט תשלומי סיום</div>
-          <div id="term-rows"></div>
-          <div style="border-top:2px solid var(--danger);margin-top:12px;padding-top:12px;display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-weight:700;font-size:15px;">סה"כ לתשלום:</span>
-            <span id="term-total" style="font-size:22px;font-weight:900;color:var(--danger);">₪0</span>
-          </div>
-        </div>
-        <div style="display:flex;gap:10px;flex-wrap:wrap;">
-          <button class="btn btn-primary" onclick="generateTerminationPDF()">📄 דוח PDF לחתימה</button>
-          <button class="btn btn-outline" onclick="document.getElementById('termination-result').style.display='none'">סגור</button>
-        </div>
-      </div>
-
-      <div id="termination-placeholder" style="color:var(--text3);font-size:13px;">
-        מלא את תאריך הסיום ושכר אחרון לחישוב אוטומטי
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ══════════════ SCREEN 4: GUIDE ══════════════ -->
-  <div id="screen-guide" class="screen active">
-
-    <div style="text-align:center;margin-bottom:28px;">
-      <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">מדריך העסקת עובדת זרה</div>
-      <div style="color:var(--text2);font-size:14px;margin-top:6px;">מהגיוס ועד סיום ההעסקה – כל מה שצריך לדעת</div>
-    </div>
-
-    <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;">
-      <button class="guide-phase-btn active" onclick="showPhase('before')" id="btn-before">⏳ לפני ההעסקה</button>
-      <button class="guide-phase-btn" onclick="showPhase('during')" id="btn-during">🔄 במהלך ההעסקה</button>
-      <button class="guide-phase-btn" onclick="showPhase('end')" id="btn-end">🏁 סיום העסקה</button>
-    </div>
-
-    <div id="phase-before" class="guide-phase">
-      <div class="timeline">
-
-        <div class="tl-item">
-          <div class="tl-dot" style="background:#6366f1;">1</div>
-          <div class="tl-content">
-            <div class="tl-title">🔍 גיוס וסוכנות</div>
-            <div class="tl-body">
-              <p>בחר סוכנות כוח אדם מורשית (רישיון מטעם משרד הפנים). וודא שהסוכנות מתמחה בעובדות סיעוד.</p>
-              <div class="tl-checklist">
-                <div class="chk">☐ קבל רשימת עובדות זמינות עם קורות חיים</div>
-                <div class="chk">☐ וודא ניסיון בסיעוד / טיפול בקשישים</div>
-                <div class="chk">☐ בקש תעודות הכשרה ואישורי ניסיון</div>
-                <div class="chk">☐ שאל על עלויות הסוכנות (חד-פעמי)</div>
-              </div>
-              <a href="https://www.gov.il/he/pages/list_of_liscensed_manpower_companies_foreign_workers" target="_blank" class="tl-link">🔗 רשימת לשכות מורשות – gov.il</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-dot" style="background:#8b5cf6;">2</div>
-          <div class="tl-content">
-            <div class="tl-title">🛂 ויזה ואשרת כניסה</div>
-            <div class="tl-body">
-              <p>העובדת זקוקה לאשרת עבודה מסוג B/1 (עובד זר). הסוכנות בדרך כלל מטפלת בזה.</p>
-              <div class="tl-checklist">
-                <div class="chk">☐ הגש בקשה דרך רשות האוכלוסין וההגירה</div>
-                <div class="chk">☐ צרף מסמכי מטופל (צורך רפואי מוכח)</div>
-                <div class="chk">☐ קבל אישור עסקה ממשרד הפנים</div>
-                <div class="chk">☐ וודא תוקף דרכון (מינימום 18 חודשים)</div>
-              </div>
-              <div class="tl-tip">⏱️ זמן עיבוד: 4–8 שבועות בממוצע</div>
-              <a href="https://www.gov.il/he/service/foreign-caregiver-permit" target="_blank" class="tl-link">🔗 בקשה להיתר עובד זר סיעוד – gov.il</a>
-              <a href="https://www.gov.il/he/pages/list_of_liscensed_manpower_companies_foreign_workers" target="_blank" class="tl-link">🔗 רשימת לשכות מורשות – gov.il</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-dot" style="background:#a855f7;">3</div>
-          <div class="tl-content">
-            <div class="tl-title">📄 חוזה עבודה והסכם</div>
-            <div class="tl-body">
-              <p>חובה לחתום על חוזה בכתב לפני תחילת העבודה, בשפה שהעובדת מבינה.</p>
-              <div class="tl-checklist">
-                <div class="chk">☐ שכר בסיס (לא פחות מהמינימום: ₪6,365 נכון ל-2025)</div>
-                <div class="chk">☐ שעות עבודה ותנאי מגורים</div>
-                <div class="chk">☐ ימי חופשה, חגים, מחלה</div>
-                <div class="chk">☐ תוספות שבת וחג</div>
-                <div class="chk">☐ תנאי סיום העסקה</div>
-              </div>
-              <div class="tl-tip">💡 שמור עותק חתום באפליקציה (מסך "פרטי עובדת")</div>
-              <a href="https://mb-din.co.il/" target="_blank" class="tl-link" style="border-color:rgba(167,139,250,0.4);color:var(--accent2);">👩‍⚖️ ייעוץ וניסוח חוזה – עו״ד MB דין</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-dot" style="background:#c084fc;">4</div>
-          <div class="tl-content">
-            <div class="tl-title">🏛️ ביטוח לאומי ורישום כמעסיק</div>
-            <div class="tl-body">
-              <p>מיד עם תחילת העבודה יש להירשם כמעסיק בביטוח לאומי.</p>
-              <div class="tl-checklist">
-                <div class="chk">☐ פתח תיק מעסיק בביטוח לאומי (מקוון / סניף)</div>
-                <div class="chk">☐ חלק מעסיק: 3.55% (בריאות + נפגעי עבודה)</div>
-                <div class="chk">☐ חלק עובד: 3.5% (מנוכה ממשכורת)</div>
-                <div class="chk">☐ שלם עד ה-15 לחודש שאחרי</div>
-              </div>
-              <a href="https://b2b.btl.gov.il/BTL.ILG.Payments/MeshekBaitOpenForm.aspx" target="_blank" class="tl-link">🔗 פתיחת תיק מעסיק מקוון – ביטוח לאומי</a>
-              <a href="https://www.btl.gov.il/Insurance/Maasik/Pages/mekabelSiud.aspx" target="_blank" class="tl-link">🔗 דיווח ותשלום – עובד זר סיעוד</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-dot" style="background:#e879f9;">5</div>
-          <div class="tl-content">
-            <div class="tl-title">🏦 פתיחת חשבון בנק לעובדת</div>
-            <div class="tl-body">
-              <p>חובה חוקית לשלם את השכר לחשבון בנק של העובדת (לא במזומן).</p>
-              <div class="tl-checklist">
-                <div class="chk">☐ לווה אותה לסניף בנק (דרכון + ויזה)</div>
-                <div class="chk">☐ פתח חשבון עו"ש בסיסי</div>
-                <div class="chk">☐ הגדר העברה קבועה מדי חודש</div>
-                <div class="chk">☐ שמור פרטי חשבון בחוזה</div>
-              </div>
-              <div class="tl-tip">🏦 בנק הדואר ידידותי במיוחד לעובדים זרים</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <div id="phase-during" class="guide-phase" style="display:none;">
-      <div class="timeline">
-
-        <div class="tl-item">
-          <div class="tl-dot" style="background:#0ea5e9;">6</div>
-          <div class="tl-content">
-            <div class="tl-title">💰 תשלום שכר חודשי</div>
-            <div class="tl-body">
-              <p>השכר חייב להשתלם לא יאוחר מהיום ה-9 לחודש שאחרי.</p>
-              <div class="tl-checklist">
-                <div class="chk">☐ שכר בסיס + תוספות שבת / חג</div>
-                <div class="chk">☐ הפקד לחשבון הבנק של העובדת</div>
-                <div class="chk">☐ שלם ביטוח לאומי (עד ה-15)</div>
-                <div class="chk">☐ תעד בשכרון (מסך "ניהול חודשי")</div>
-              </div>
-              <div class="tl-tip">📲 השתמש בלוח השנה לסימון שבתות וחגים</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-dot" style="background:#38bdf8;">7</div>
-          <div class="tl-content">
-            <div class="tl-title">🎉 זכויות העובדת – חופשה, מחלה, חגים</div>
-            <div class="tl-body">
-              <p>העובדת זכאית לחגים ולחופשה שנתית בתשלום.</p>
-              <div class="tl-facts">
-                <div class="fact-item">
-                  <span class="fact-num">12</span>
-                  <span>ימי חג שנתיים</span>
-                </div>
-                <div class="fact-item">
-                  <span class="fact-num">14</span>
-                  <span>ימי חופשה (שנה+)</span>
-                </div>
-                <div class="fact-item">
-                  <span class="fact-num">18</span>
-                  <span>ימי מחלה בשנה</span>
-                </div>
-                <div class="fact-item">
-                  <span class="fact-num">6</span>
-                  <span>ימי הבראה (שנה+)</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-dot" style="background:#7dd3fc;">8</div>
-          <div class="tl-content">
-            <div class="tl-title">🔄 חידוש ויזה</div>
-            <div class="tl-body">
-              <p>ויזת עובד זר תקפה לשנה, יש לחדש לפני פקיעה.</p>
-              <div class="tl-checklist">
-                <div class="chk">☐ התחל תהליך 3 חודשים לפני פקיעה</div>
-                <div class="chk">☐ הגש בקשת הארכה לרשות האוכלוסין</div>
-                <div class="chk">☐ צרף הצהרת המשך העסקה</div>
-                <div class="chk">☐ עדכן תאריך בשכרון (מסך "פרטי עובדת")</div>
-              </div>
-              <div class="tl-tip">⚠️ עבודה עם ויזה פגת תוקף = קנס כבד על המעסיק!</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-dot" style="background:#bae6fd;">9</div>
-          <div class="tl-content">
-            <div class="tl-title">📋 מעקב שוטף ותיעוד</div>
-            <div class="tl-body">
-              <p>שמור תיעוד מסודר לכל אורך ההעסקה.</p>
-              <div class="tl-checklist">
-                <div class="chk">☐ תלוש שכר חודשי (PDF מהאפליקציה)</div>
-                <div class="chk">☐ קבלות על תשלומי ביטוח לאומי</div>
-                <div class="chk">☐ יומן ימי היעדרות / חופשות</div>
-                <div class="chk">☐ סנכרן לענן (כפתור ☁️ בראש המסך)</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <div id="phase-end" class="guide-phase" style="display:none;">
-      <div class="timeline">
-
-        <div class="tl-item">
-          <div class="tl-dot" style="background:#10b981;">10</div>
-          <div class="tl-content">
-            <div class="tl-title">📢 הודעה מוקדמת</div>
-            <div class="tl-body">
-              <p>חובה לתת הודעה מוקדמת לפי הוותק.</p>
-              <div class="tl-facts">
-                <div class="fact-item">
-                  <span class="fact-num">1</span>
-                  <span>חודש לכל שנת עבודה (עד 6)</span>
-                </div>
-              </div>
-              <div class="tl-checklist">
-                <div class="chk">☐ הסכם כתוב על סיום העסקה</div>
-                <div class="chk">☐ הגדר תאריך סיום מוסכם</div>
-                <div class="chk">☐ הכן חשבון סופי</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-dot" style="background:#34d399;">11</div>
-          <div class="tl-content">
-            <div class="tl-title">💸 חשבון סופי ופיצויים</div>
-            <div class="tl-body">
-              <p>בסיום העסקה יש לשלם את כל המגיע לעובדת בתוך 14 יום.</p>
-              <div class="tl-checklist">
-                <div class="chk">☐ שכר לתקופה שעבדה (כולל פרו-רטה)</div>
-                <div class="chk">☐ פדיון חופשה שלא נוצלה</div>
-                <div class="chk">☐ פיצויי פיטורים (שנה+): שכר × שנות עבודה</div>
-                <div class="chk">☐ הבראה יחסית לשנה החלקית</div>
-              </div>
-              <div class="tl-tip">💡 פיצויים = שכר בסיס אחרון × מספר שנות עבודה</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tl-item">
-          <div class="tl-dot" style="background:#6ee7b7;">12</div>
-          <div class="tl-content">
-            <div class="tl-title">🏛️ סגירת תיק ביטוח לאומי</div>
-            <div class="tl-body">
-              <div class="tl-checklist">
-                <div class="chk">☐ הגש דיווח סיום העסקה לביטוח לאומי</div>
-                <div class="chk">☐ שלם יתרת חובות (אם יש)</div>
-                <div class="chk">☐ קבל אישור סגירת תיק</div>
-                <div class="chk">☐ הודע לרשות האוכלוסין על סיום</div>
-              </div>
-              <div class="tl-tip">📎 שמור את כל המסמכים 7 שנים לפחות</div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
-    <div class="card" style="margin-top:24px;">
-      <div class="card-title"><span class="icon">🔗</span> קישורים שימושיים</div>
-
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">🏢 גיוס – לשכות וסוכנויות מורשות</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:16px;">
-        <a href="https://www.gov.il/he/pages/list_of_liscensed_manpower_companies_foreign_workers" target="_blank" class="link-card">📋 רשימת לשכות מורשות – gov.il</a>
-        <a href="https://caregiving.co.il" target="_blank" class="link-card">🌿 אביעזר בבית – תאגיד סיעוד</a>
-        <a href="https://www.matav.org.il/עובדים-זרים-לסיעוד/" target="_blank" class="link-card">🤝 מטב – עמותת סיעוד</a>
-        <a href="https://kav-lamaasik.co.il/מדריך-להעסקת-עובד-זר/" target="_blank" class="link-card">📖 קו למעסיק – מדריך מלא</a>
-      </div>
-
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">🏛️ ביטוח לאומי</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:16px;">
-        <a href="https://b2b.btl.gov.il/BTL.ILG.Payments/MeshekBaitOpenForm.aspx" target="_blank" class="link-card">➕ פתיחת תיק מעסיק – משק בית</a>
-        <a href="https://www.btl.gov.il/Insurance/Maasik/Pages/mekabelSiud.aspx" target="_blank" class="link-card">📊 דיווח ותשלום – עובד זר סיעוד</a>
-        <a href="https://www.btl.gov.il/Insurance/National%20Insurance/type_list/House_keeper/Pages/HovotMaasikMeshekBait.aspx" target="_blank" class="link-card">📅 לוח תשלומים רבעוני</a>
-        <a href="https://www.kolzchut.org.il/he/דיווח_ותשלום_דמי_ביטוח_לאומי_עבור_עובד_זר_בסיעוד" target="_blank" class="link-card">📚 כל זכות – ב"ל לעובד זר סיעוד</a>
-      </div>
-
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">🛂 ויזה ואשרות</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;margin-bottom:16px;">
-        <a href="https://www.gov.il/he/service/foreign-caregiver-permit" target="_blank" class="link-card">📝 בקשה להיתר עובד זר סיעוד</a>
-        <a href="https://www.piba.gov.il" target="_blank" class="link-card">🛂 רשות האוכלוסין וההגירה</a>
-      </div>
-
-      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">⚖️ זכויות וחוקי עבודה</div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px;">
-        <a href="https://www.gov.il/he/departments/ministry_of_labor" target="_blank" class="link-card">⚖️ משרד העבודה</a>
-        <a href="https://www.kolzchut.org.il" target="_blank" class="link-card">📚 כל זכות – מדריך מקיף</a>
-        <a href="https://www.reutheshel.org.il/חברות-כוח-אדם-לעובדים-זרים-תאגידים" target="_blank" class="link-card">🔍 מרכז מידע רעות</a>
-        <a href="https://mb-din.co.il/" target="_blank" class="link-card" style="border-color:rgba(167,139,250,0.4);background:rgba(167,139,250,0.07);">👩‍⚖️ ייעוץ משפטי – עו״ד MB דין <span style="font-size:10px;color:var(--accent2);margin-right:4px;">מומלץ</span></a>
-      </div>
-
-      <div style="margin-top:14px;padding:10px 14px;background:rgba(91,127,255,0.08);border-radius:8px;border:1px solid rgba(91,127,255,0.2);font-size:12px;color:var(--text2);">
-        💡 <strong style="color:var(--text);">תזכורת תשלום ב"ל:</strong> 4 פעמים בשנה –
-        <span style="color:var(--accent);">20 אפריל</span> (ינ׳–מרץ) ·
-        <span style="color:var(--accent);">20 יולי</span> (אפר׳–יוני) ·
-        <span style="color:var(--accent);">20 אוקטובר</span> (יול׳–ספט׳) ·
-        <span style="color:var(--accent);">20 ינואר</span> (אוק׳–דצמ׳)
-        <br>שיעור דמי ביטוח לאומי מינואר 2025: <strong style="color:var(--accent);">3.6%</strong> מהשכר המשולם
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ══════════════ SCREEN 5: PREMIUM ══════════════ -->
-  <div id="screen-premium" class="screen">
-
-    <!-- Hero -->
-    <div style="text-align:center;padding:32px 20px 24px;background:linear-gradient(160deg,rgba(91,127,255,0.12),rgba(167,139,250,0.08));border-radius:var(--radius);border:1px solid var(--border);margin-bottom:24px;">
-      <div style="font-size:36px;margin-bottom:8px;">⭐</div>
-      <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">שכרון פרימיום</div>
-      <div style="font-size:15px;color:var(--text2);max-width:480px;margin:0 auto;line-height:1.6;">ניהול מקצועי ומלא של העסקת עובדת זרה — חסכו זמן, הימנעו מטעויות, תישארו מסודרים</div>
-    </div>
-
-    <!-- Feature comparison -->
-    <div class="card" style="margin-bottom:20px;">
-      <div class="card-title"><span class="icon">📊</span> מה כלול בכל תוכנית</div>
-      <div style="overflow-x:auto;">
-        <table style="width:100%;border-collapse:collapse;font-size:13px;">
-          <thead>
-            <tr style="border-bottom:2px solid var(--border);">
-              <th style="padding:10px 8px;text-align:right;font-weight:700;color:var(--text2);">פיצ'ר</th>
-              <th style="padding:10px 16px;text-align:center;font-weight:700;color:var(--text2);">חינמי</th>
-              <th style="padding:10px 16px;text-align:center;font-weight:700;background:rgba(91,127,255,0.08);border-radius:8px 8px 0 0;color:var(--accent);">פרימיום ⭐</th>
-            </tr>
-          </thead>
-          <tbody id="feature-table-body">
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Pricing cards -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px;">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center;">
-        <div style="font-size:13px;color:var(--text2);font-weight:600;margin-bottom:8px;">חודשי</div>
-        <div style="font-size:36px;font-weight:900;color:var(--text);">₪39</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:16px;">לחודש</div>
-        <button class="btn btn-outline" style="width:100%;" onclick="openSignup('monthly')">הרשמה לרשימת המתנה</button>
-      </div>
-      <div style="background:linear-gradient(160deg,rgba(91,127,255,0.1),rgba(167,139,250,0.08));border:2px solid var(--accent);border-radius:var(--radius);padding:24px;text-align:center;position:relative;">
-        <div style="position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;white-space:nowrap;">הכי משתלם</div>
-        <div style="font-size:13px;color:var(--accent);font-weight:600;margin-bottom:8px;">שנתי</div>
-        <div style="font-size:36px;font-weight:900;color:var(--text);">₪199</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:4px;">לשנה</div>
-        <div style="font-size:11px;color:var(--success);margin-bottom:16px;">חיסכון של ₪269 לעומת חודשי</div>
-        <button class="btn btn-primary" style="width:100%;" onclick="openSignup('yearly')">הרשמה לרשימת המתנה</button>
-      </div>
-    </div>
-
-    <!-- Signup form -->
-    <div class="card" id="signup-card" style="display:none;">
-      <div class="card-title"><span class="icon">✉️</span> הרשמה לרשימת המתנה</div>
-      <p style="font-size:13px;color:var(--text2);margin-bottom:16px;">השאירו פרטים ואעדכן אתכם ברגע שהפרימיום עולה לאוויר. המקדימים יקבלו מחיר השקה מיוחד.</p>
-      <div class="form-grid" style="margin-bottom:16px;">
-        <div class="form-group">
-          <label>שם מלא</label>
-          <input type="text" id="signup-name" placeholder="ישראל ישראלי" />
-        </div>
-        <div class="form-group">
-          <label>אימייל</label>
-          <input type="email" id="signup-email" placeholder="name@example.com" />
-        </div>
-        <div class="form-group">
-          <label>טלפון (אופציונלי)</label>
-          <input type="tel" id="signup-phone" placeholder="050-0000000" />
-        </div>
-        <div class="form-group">
-          <label>תוכנית מועדפת</label>
-          <select id="signup-plan">
-            <option value="yearly">שנתי – ₪199/שנה</option>
-            <option value="monthly">חודשי – ₪39/חודש</option>
-          </select>
-        </div>
-      </div>
-      <div class="form-group" style="margin-bottom:16px;">
-        <label>מה הכי חשוב לך באפליקציה? (אופציונלי)</label>
-        <textarea id="signup-feedback" placeholder="למשל: תזכורות אוטומטיות, דוחות לרואה חשבון..." style="height:60px;"></textarea>
-      </div>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="submitSignupToDb()">📩 שלח הרשמה</button>
-        <button class="btn btn-outline" onclick="document.getElementById('signup-card').style.display='none'">ביטול</button>
-        <span id="signup-msg" style="font-size:13px;color:var(--success);display:none;">✓ נרשמת בהצלחה! נעדכן אותך בקרוב.</span>
-      </div>
-    </div>
-
-    <!-- Social proof placeholder -->
-    <div class="card" style="margin-top:20px;">
-      <div class="card-title"><span class="icon">💬</span> מה אומרים משתמשים</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div style="background:var(--surface2);border-radius:10px;padding:14px;">
-          <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px;">"סוף סוף אפליקציה שמבינה מה משפחה עם עובדת זרה צריכה. הלוח שנה עם החגים הציל אותי כל חודש."</div>
-          <div style="font-size:12px;color:var(--text3);">— משפחה מתל אביב</div>
-        </div>
-        <div style="background:var(--surface2);border-radius:10px;padding:14px;">
-          <div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:8px;">"המדריך לבד שווה הכל. לא ידעתי כמה עניינים צריך לסגור עד שראיתי את הרשימה."</div>
-          <div style="font-size:12px;color:var(--text3);">— משפחה מחיפה</div>
-        </div>
-      </div>
-      <div style="text-align:center;margin-top:16px;font-size:13px;color:var(--text3);">
-        <span id="signup-count-display">הצטרפו כבר <strong style="color:var(--accent);">0</strong> משפחות לרשימת המתנה</span>
-      </div>
-      <div style="text-align:center;margin-top:12px;" id="dev-toggle-area"></div>
-      <div style="text-align:center;margin-top:8px;">
-        <button class="btn btn-outline btn-sm" onclick="toggleGuiTests()" style="font-size:11px;color:var(--text3);">
-          🧪 GUI Tests (Ctrl+Shift+Q)
-        </button>
-      </div>
-    </div>
-
-  </div>
-
-</div><!-- /main -->
-
-<!-- ══════════════ MONTH MODAL ══════════════ -->
-<div class="modal-bg" id="month-modal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title" id="modal-title-text">ניהול חודש</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-
-    <input type="hidden" id="editing-month-key" />
-
-    <div class="form-grid" style="margin-bottom:20px;">
-      <div class="form-group">
-        <label>חודש ושנה</label>
-        <input type="month" id="m-month" onchange="renderCalendar(); checkHavraAlert();" />
-      </div>
-      <div class="form-group">
-        <label>שכר בסיס ברוטו (₪)</label>
-        <input type="number" id="m-base" placeholder="מהחוזה" />
-      </div>
-      <div class="form-group">
-        <label>החזר הוצאות (₪)</label>
-        <input type="number" id="m-expenses" placeholder="0" value="0" />
-      </div>
-      <div class="form-group">
-        <label>ימי חופשה / מחלה החודש 🏖️</label>
-        <input type="number" id="m-vac-days" placeholder="0" value="0" min="0" />
-      </div>
-      <div class="form-group">
-        <label>הערות</label>
-        <input type="text" id="m-notes" placeholder="הערות חופשיות..." />
-      </div>
-    </div>
-
-    <!-- הוצאות מעסיק מחושבות -->
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:16px;">
-      <div style="font-size:13px;font-weight:700;color:var(--warn);margin-bottom:10px;">💼 הוצאות מעסיק – חישוב אוטומטי</div>
-      <div id="modal-employer-costs" style="font-size:13px;color:var(--text2);">הזן שכר בסיס כדי לחשב</div>
-    </div>
-
-    <!-- התראת הבראה -->
-    <div id="havra-alert" style="display:none;background:rgba(251,191,36,0.1);border:1px solid var(--warn);border-radius:10px;padding:14px;margin-bottom:16px;">
-      <div style="font-size:13px;font-weight:700;color:var(--warn);margin-bottom:6px;">🌴 חודש הבראה!</div>
-      <div id="havra-alert-text" style="font-size:13px;color:var(--text2);margin-bottom:10px;"></div>
-      <button class="btn btn-sm" style="background:rgba(251,191,36,0.2);border:1px solid var(--warn);color:var(--warn);" onclick="addHavraToMonth()">
-        ➕ הוסף הבראה לחשבון החודשי
-      </button>
-    </div>
-
-    <!-- Calendar -->
-    <div class="card" style="margin-bottom:16px;">
-      <div class="card-title"><span class="icon">📅</span> לוח שנה – סמן ימי שבת וחג בעבודה</div>
-      <div class="cal-header">
-        <button class="cal-nav" onclick="calNav(-1)">&#8250;</button>
-        <div class="cal-month-label" id="cal-label">—</div>
-        <button class="cal-nav" onclick="calNav(1)">&#8249;</button>
-      </div>
-      <div class="cal-grid" id="cal-grid"></div>
-      <div class="cal-legend">
-        <div class="legend-item"><div class="legend-dot" style="background:rgba(249,115,22,0.5);border:2px solid var(--shabbat)"></div> שבת שעבדה</div>
-        <div class="legend-item"><div class="legend-dot" style="background:rgba(129,140,248,0.4);border:2px solid var(--holiday)"></div> חג שעבדה</div>
-        <div class="legend-item"><div class="legend-dot" style="background:rgba(52,211,153,0.15);border:1.5px solid var(--success)"></div> חג מותאם 🗓</div>
-        <div class="legend-item"><div class="legend-dot" style="background:var(--surface3);border:1px solid var(--border)"></div> שבת רגילה</div>
-        <div class="legend-item"><div class="legend-dot" style="background:transparent;border:1px solid var(--holiday)"></div> חג (לא עבדה)</div>
-      </div>
-      <div style="font-size:12px;color:var(--text3);margin-top:8px;">
-        💡 לחץ על יום רגיל לסימון חג מותאם אישית • <span id="custom-vac-count">0</span> חגים מותאמים
-      </div>
-
-      <div style="margin-top:16px; display:flex; gap:20px; align-items:center; flex-wrap:wrap;">
-        <div style="font-size:13px; color:var(--text2);">סיכום: <strong id="sum-shabbat" style="color:var(--shabbat)">0</strong> שבתות | <strong id="sum-holidays" style="color:var(--holiday)">0</strong> חגים</div>
-        <div style="font-size:13px; color:var(--success); font-weight:700;">סה״כ משוער: ₪<span id="sum-total">0</span></div>
-      </div>
-    </div>
-
-    <div class="modal-footer">
-      <button class="btn btn-danger btn-sm" id="delete-month-btn" onclick="deleteMonthFromDb(document.getElementById('editing-month-key').value)" style="display:none; margin-left:auto;">🗑️ מחק</button>
-      <button class="btn btn-outline" onclick="closeModal()">ביטול</button>
-      <button class="btn btn-primary" onclick="saveMonthToDb()">💾 שמור חודש</button>
-      <button class="btn btn-success" onclick="generatePDF()">📄 PDF</button>
+    <div class="price-card featured">
+      <div class="price-tag">הכי משתלם</div>
+      <div class="price-name">פרימיום שנתי</div>
+      <div class="price-amount">₪199</div>
+      <div class="price-period">לשנה • פחות מ-₪17 בחודש</div>
+      <ul class="price-features">
+        <li>הכל בחינמי</li>
+        <li>ניהול חודשי ללא הגבלה</li>
+        <li>תלושי שכר PDF מקצועיים</li>
+        <li>הוצאות מעסיק + הבראה</li>
+        <li>דוח סיום התקשרות</li>
+        <li>התראות ויזה + ב"ל</li>
+        <li>סנכרון ענן</li>
+      </ul>
+      <a href="app.html" class="price-cta price-cta-paid">הצטרפו לרשימת ההמתנה</a>
     </div>
   </div>
+  <p style="font-size:13px;color:var(--text3);margin-top:20px;">חוסכים ₪2,000–4,000 בחודש — מטפל עולה ₪17 בחודש</p>
+</section>
 </div>
 
-
-<div id="report-preview"></div>
-<div id="toast"></div>
-
-<!-- ══════════════ LOGIN SCREEN ══════════════ -->
-<div id="screen-login" style="display:none;position:fixed;inset:0;z-index:300;background:var(--bg);overflow-y:auto;">
-  <div style="max-width:420px;margin:60px auto;padding:0 20px;">
-
-    <div style="text-align:center;margin-bottom:32px;">
-      <div style="font-size:40px;margin-bottom:12px;">✦</div>
-      <div style="font-size:26px;font-weight:900;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:8px;">ברוכים הבאים לשכרון</div>
-      <div style="font-size:14px;color:var(--text2);">התחברו כדי לשמור נתונים בענן ולגשת מכל מכשיר</div>
-    </div>
-
-    <button onclick="signInWithGoogle()" class="btn btn-primary" style="width:100%;justify-content:center;gap:10px;margin-bottom:16px;padding:13px;">
-      <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.7 2.3 30.2 0 24 0 14.6 0 6.6 5.4 2.7 13.3l7.8 6.1C12.4 13 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.5 3-2.2 5.5-4.7 7.2l7.3 5.7c4.3-4 6.7-9.9 6.7-16.9z"/><path fill="#FBBC05" d="M10.5 28.6A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.1.7-4.6L2.4 13.3A23.9 23.9 0 0 0 0 24c0 3.8.9 7.4 2.5 10.6l8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7.3-5.7c-2 1.4-4.6 2.2-7.9 2.2-6.2 0-11.5-4.2-13.4-9.8l-7.9 6.1C6.5 42.5 14.6 48 24 48z"/></svg>
-      התחברות עם Google
-    </button>
-
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-      <div style="flex:1;height:1px;background:var(--border);"></div>
-      <span style="font-size:12px;color:var(--text3);">או עם מייל וסיסמה</span>
-      <div style="flex:1;height:1px;background:var(--border);"></div>
-    </div>
-
-    <div class="card">
-      <div class="form-group" style="margin-bottom:12px;">
-        <label>אימייל</label>
-        <input type="email" id="login-email" placeholder="your@email.com" />
+<!-- TESTIMONIALS -->
+<section class="testi-section">
+  <div class="testi-inner">
+    <h2 class="testi-title">משפחות שכבר מנהלות נכון</h2>
+    <div class="testi-grid">
+      <div class="testi-card">
+        <div class="testi-text">סוף סוף אפליקציה שמבינה מה אנחנו צריכים. הלוח שנה עם החגים ההודיים חסך לי כאב ראש כל חודש.</div>
+        <div class="testi-author">— משפחה מתל אביב, מעסיקה עובדת הודית זה 3 שנים</div>
       </div>
-      <div class="form-group" style="margin-bottom:16px;">
-        <label>סיסמה <span style="font-size:11px;color:var(--text3);">(השאר ריק לקישור במייל)</span></label>
-        <input type="password" id="login-password" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" />
+      <div class="testi-card">
+        <div class="testi-text">המדריך לבד שווה הכל. לא ידעתי כמה עניינים צריך לסגור עד שראיתי את הרשימה המלאה.</div>
+        <div class="testi-author">— משפחה מחיפה, בתחילת תהליך הגיוס</div>
       </div>
-      <button onclick="doLogin()" class="btn btn-primary" style="width:100%;justify-content:center;padding:12px;">
-        כניסה
-      </button>
-      <div id="login-msg" style="margin-top:10px;font-size:13px;color:var(--success);display:none;text-align:center;"></div>
+      <div class="testi-card">
+        <div class="testi-text">דוח סיום ההתקשרות חסך לנו ויכוח ועורך דין. הכל יצא מסודר עם פירוט מלא.</div>
+        <div class="testi-author">— משפחה מירושלים, לאחר 4 שנות העסקה</div>
+      </div>
     </div>
-
-    <div style="text-align:center;margin-top:20px;">
-      <button onclick="closeLoginScreen()" style="background:transparent;border:none;color:var(--text3);font-size:13px;cursor:pointer;text-decoration:underline;">
-        המשך ללא התחברות (שמירה מקומית בלבד)
-      </button>
-    </div>
-
   </div>
-</div>
+</section>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="supabase/supabase.js"></script>
-<script src="holidays.js"></script>
-<script src="app.js"></script>
+<!-- FAQ -->
+<section class="section">
+  <div class="section-tag">שאלות נפוצות</div>
+  <h2 class="section-title" style="text-align:center;margin-bottom:40px;">שאלות ותשובות</h2>
+  <div class="faq-list">
+    <div class="faq-item">
+      <div class="faq-q">האם אני צריך ניסיון בניהול שכר?</div>
+      <div class="faq-a">ממש לא. מטפל מחשב הכל אוטומטית — מזינים שכר בסיס, מסמנים שבתות וחגים, והאפליקציה מייצרת תלוש מקצועי תוך דקות.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">כמה זמן לוקח להגדיר את המערכת?</div>
+      <div class="faq-a">בערך 10 דקות. מזינים פרטי עובדת, תנאי שכר, ושיעורי ביטוח לאומי — ומכאן הכל אוטומטי לכל חודש.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">האם התלוש מוכר משפטית?</div>
+      <div class="faq-a">מטפל מפיק תלוש מסודר עם פירוט מלא ושדות חתימה לשני הצדדים. בפועל תלוש כזה מקובל כהוכחת תשלום.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">מה קורה לנתונים שלי?</div>
+      <div class="faq-a">הנתונים שמורים מקומית על המכשיר שלכם ובאופציה גם בענן מאובטח. לא מוכרים מידע ולא משתמשים בו לפרסום.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">האם אפשר לבטל את הפרימיום?</div>
+      <div class="faq-a">כן, בכל עת. הנתונים שלכם נשמרים גם אחרי הביטול.</div>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final-cta">
+  <h2>מוכנים לנהל נכון?</h2>
+  <p>הצטרפו למשפחות שכבר חוסכות זמן וכסף עם מטפל</p>
+  <a href="app.html" class="btn-white">התחל בחינם — ללא כרטיס אשראי</a>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <p>מטפל ✦ &nbsp;•&nbsp; ניהול חכם להעסקת עובדת זרה &nbsp;•&nbsp; <a href="app.html">כנס לאפליקציה</a></p>
+  <p style="margin-top:6px;">אינו מהווה ייעוץ משפטי או חשבונאי</p>
+</footer>
+
+<script>
+document.querySelectorAll('.faq-q').forEach(q => {
+  q.addEventListener('click', () => {
+    const item = q.closest('.faq-item');
+    const wasOpen = item.classList.contains('open');
+    document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+    if (!wasOpen) item.classList.add('open');
+  });
+});
+</script>
 </body>
 </html>

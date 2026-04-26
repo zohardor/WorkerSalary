@@ -1,4 +1,4 @@
-// app.js – לוגיקה ראשית של שכרון
+// app.js – לוגיקה ראשית של מטפל
 
 // ─────────────── STATE ───────────────
 let appData = {
@@ -44,7 +44,7 @@ function createGuiTestPanel() {
   `;
   panel.innerHTML = `
     <div style="padding:16px 20px;border-bottom:1px solid #2d3352;display:flex;align-items:center;gap:12px;">
-      <div style="font-size:20px;font-weight:900;background:linear-gradient(135deg,#5b7fff,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">שכרון ✦ GUI Tests</div>
+      <div style="font-size:20px;font-weight:900;background:linear-gradient(135deg,#5b7fff,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">מטפל ✦ GUI Tests</div>
       <div id="gt-summary" style="font-size:13px;color:#5a6280;">לחץ הרץ...</div>
       <button onclick="runGuiTests()" style="margin-right:auto;padding:8px 20px;background:#5b7fff;color:#fff;border:none;border-radius:8px;font-family:'Heebo',sans-serif;font-weight:700;cursor:pointer;">▶ הרץ</button>
       <button onclick="toggleGuiTests()" style="padding:8px 14px;background:#1a1f2e;color:#9ba4c0;border:1px solid #2d3352;border-radius:8px;font-family:'Heebo',sans-serif;cursor:pointer;">✕ סגור</button>
@@ -256,6 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
   applyPlanGates();
   renderAlerts();
   showScreen('screen-guide'); // ודא שהמדריך פעיל בטעינה
+  setTimeout(initAccordion, 200); // אתחל accordion אחרי render
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
@@ -299,21 +300,57 @@ function loadLocal() {
   } catch(e) {}
 }
 
+// ─────────────── TERMS MODAL ───────────────
+function checkTermsAndGoogle() {
+  if (!document.getElementById('terms-agree')?.checked) {
+    toast('יש להסכים לתנאי השימוש קודם');
+    return;
+  }
+  if (typeof signInWithGoogle === 'function') signInWithGoogle();
+}
+
+function checkTermsAndLogin() {
+  if (!document.getElementById('terms-agree')?.checked) {
+    toast('יש להסכים לתנאי השימוש קודם');
+    return;
+  }
+  if (typeof doLogin === 'function') doLogin();
+}
+
+function showTermsModal() {
+  document.getElementById('terms-modal').style.display = 'block';
+}
+
+function closeTermsModal() {
+  document.getElementById('terms-modal').style.display = 'none';
+}
+
+function agreeAndClose() {
+  document.getElementById('terms-agree').checked = true;
+  closeTermsModal();
+  toast('✓ הסכמת לתנאי השימוש');
+}
+
 // ─────────────── SCREENS ───────────────
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const idx = ['screen-guide','screen-worker','screen-salary','screen-costs','screen-premium'].indexOf(id);
-  document.querySelectorAll('.nav-tab')[idx].classList.add('active');
+  const navIds = ['screen-guide','screen-worker','screen-salary','screen-costs','screen-premium','screen-admin'];
+  const idx = navIds.indexOf(id);
+  if (idx >= 0) {
+    const tabs = document.querySelectorAll('.nav-tab');
+    if (tabs[idx]) tabs[idx].classList.add('active');
+  }
   if (id === 'screen-salary')  renderMonthsList();
-  if (id === 'screen-worker') renderAlerts();
+  if (id === 'screen-worker')  renderAlerts();
   if (id === 'screen-guide')   setTimeout(initAccordion, 50);
   if (id === 'screen-costs')   {
     if (!requirePremium('ניהול הוצאות מעסיק')) return;
     populateRatesForm(); renderCostsScreen(); updateHavraPreview();
   }
   if (id === 'screen-premium') renderPremiumScreen();
+  if (id === 'screen-admin')   loadAdminData();
 }
 
 function showPhase(phase) {
@@ -379,15 +416,22 @@ function populateWorkerForm() {
 }
 
 // ימי חג שנוצלו = חגים שעבדה בהם (מחושב אוטומטית)
-function calcHolUsed() {
+function calcHolUsed(year = null) {
+  // מחשב ניצול ימי חג לפי שנה (ברירת מחדל: השנה הנוכחית)
+  const targetYear = year || new Date().getFullYear();
   let total = 0;
-  for (const [, m] of Object.entries(appData.months)) {
+  for (const [key, m] of Object.entries(appData.months)) {
+    const monthYear = parseInt(key.split('-')[0]);
+    if (monthYear !== targetYear) continue;
     total += (m.holidays || []).length;
+    total += (m.customVacDays || []).length; // תיקון 1: חגים מותאמים נספרים
   }
-  return total;
+  // תיקון 4: לא יותר מ-holTotal
+  const holTotal = appData.worker?.holTotal || 0;
+  return holTotal > 0 ? Math.min(total, holTotal) : total;
 }
 
-// ימי חופשה שנוצלו = ימים ידניים שהוזנו בכל חודש
+// ימי חופשה שנוצלו — מצטברים לפי שנת עבודה (לא שנה קלנדרית)
 function calcTotalVacUsed() {
   let total = 0;
   for (const [, m] of Object.entries(appData.months)) {
@@ -396,32 +440,78 @@ function calcTotalVacUsed() {
   return total;
 }
 
+// ימי חג שנוצלו השנה (מאפס כל שנה קלנדרית)
+function calcHolUsedThisYear() {
+  return calcHolUsed(new Date().getFullYear());
+}
+
+// ימי חופשה שנותרו (מצטבר — ימים שלא נוצלו עוברים לשנה הבאה)
+function calcVacLeft() {
+  const startDate  = appData.worker?.startDate;
+  const vacPerYear = appData.worker?.vacTotal || 0;
+  if (!vacPerYear) return 0;
+
+  // חשב כמה שנות זכאות קלנדריות עברו מתחילת ההעסקה
+  // לפי שנות קלנדריות — שנת ההתחלה + כל שנה שלמה שעברה
+  let yearsEntitled = 1; // שנה ראשונה תמיד
+  if (startDate) {
+    const startYear = new Date(startDate).getFullYear();
+    const nowYear   = new Date().getFullYear();
+    yearsEntitled   = Math.max(1, nowYear - startYear + 1);
+  }
+
+  const totalEntitled = vacPerYear * Math.min(yearsEntitled, 20);
+  const totalUsed     = calcTotalVacUsed();
+  return Math.max(0, totalEntitled - totalUsed);
+}
+
+// ימי חופשה שנותרו נכון לסוף שנה נתונה
+function calcVacLeftAtEndOfYear(year) {
+  const startDate  = appData.worker?.startDate;
+  const vacPerYear = appData.worker?.vacTotal || 0;
+  if (!vacPerYear) return 0;
+
+  const startYear    = startDate ? new Date(startDate).getFullYear() : year;
+  const yearsEntitled = Math.max(1, year - startYear + 1);
+  const totalEntitled = vacPerYear * Math.min(yearsEntitled, 20);
+
+  // כמה נוצל עד סוף אותה שנה
+  let totalUsed = 0;
+  for (const [key, m] of Object.entries(appData.months)) {
+    if (parseInt(key.split('-')[0]) <= year) {
+      totalUsed += parseInt(m.vacDays) || 0;
+    }
+  }
+  return Math.max(0, totalEntitled - totalUsed);
+}
+
 function updateWorkerStats() {
   const w = appData.worker;
   setText('stat-name', w.name || '—');
   setText('stat-base', w.baseSalary ? '₪' + Number(w.baseSalary).toLocaleString() : '₪0');
 
-  // ימי חג
-  const holUsed = calcHolUsed();
+  // ימי חג — מאפס כל שנה קלנדרית
+  const currentYear = new Date().getFullYear();
+  const holUsed  = calcHolUsed(currentYear);
   const holTotal = w.holTotal || 0;
-  const holLeft = Math.max(0, holTotal - holUsed);
-  setText('stat-hol-left', holLeft);
-  setText('stat-hol-used', holUsed);
+  const holLeft  = Math.max(0, holTotal - holUsed);
+  setText('stat-hol-left',  holLeft);
+  setText('stat-hol-used',  holUsed);
   setText('stat-hol-total', holTotal);
   setText('hol-total-disp', holTotal);
-  setText('hol-used-disp', holUsed);
-  setText('hol-left-disp', holLeft);
+  setText('hol-used-disp',  holUsed);
+  setText('hol-left-disp',  holLeft);
 
-  // ימי חופשה
+  // ימי חופשה — מצטבר לפי שנות עבודה
   const vacUsed = calcTotalVacUsed();
+  const vacLeft = calcVacLeft();
   const vacTotal = w.vacTotal || 0;
-  const vacLeft = Math.max(0, vacTotal - vacUsed);
-  setText('stat-vac-left', vacLeft);
-  setText('stat-vac-used', vacUsed);
+  setText('stat-vac-left',      vacLeft);
+  setText('stat-vac-used',      vacUsed);
   setText('stat-vac-total-top', vacTotal);
-  setText('vac-total-disp', vacTotal);
-  setText('vac-used-disp', vacUsed);
-  setText('vac-left-disp', vacLeft);
+  setText('vac-total-disp',     vacTotal);
+  setText('vac-used-disp',      vacUsed);
+  setText('vac-left-disp',      vacLeft);
 }
 
 function updateVacBar() {
@@ -457,16 +547,22 @@ function renderMonthsList() {
     const [yr, mo] = key.split('-');
     const label = HEB_MONTHS[parseInt(mo)-1] + ' ' + yr;
     const total = calcTotal(m);
+    const customHols = (m.customVacDays||[]).length;
+    const allHols = (m.holidays||[]).length + customHols;
+    const paidBadge = m.paid
+      ? `<span style="background:rgba(52,211,153,0.15);color:var(--success);border:1px solid var(--success);border-radius:12px;padding:2px 8px;font-size:11px;font-weight:700;">✓ שולם</span>`
+      : '';
     return `
-      <div class="month-entry" onclick="openMonthModal('${key}')">
-        <div class="me-date">${label}</div>
+      <div class="month-entry" onclick="openMonthModal('${key}')" style="${m.paid ? 'opacity:.85;' : ''}">
+        <div class="me-date">${label} ${paidBadge}</div>
         <div class="me-info">
           <span class="me-chip">בסיס: ₪${Number(m.base||0).toLocaleString()}</span>
           <span class="me-chip shab">🕯️ ${m.shabbats?.length||0} שבתות</span>
-          <span class="me-chip hol">🎉 ${m.holidays?.length||0} חגים</span>
+          <span class="me-chip hol">🎉 ${allHols} חגים</span>
           ${m.expenses ? `<span class="me-chip">החזר: ₪${Number(m.expenses).toLocaleString()}</span>` : ''}
-          ${m.vacDays ? `<span class="me-chip" style="background:rgba(52,211,153,0.15);color:var(--success);">🏖️ ${m.vacDays} ימי חופשה</span>` : ''}
-          ${m.notes ? `<span class="me-chip">📝 ${m.notes}</span>` : ''}
+          ${m.havra    ? `<span class="me-chip" style="color:var(--warn);">🌴 הבראה: ₪${Number(m.havra).toLocaleString()}</span>` : ''}
+          ${m.vacDays  ? `<span class="me-chip" style="background:rgba(52,211,153,0.15);color:var(--success);">🏖️ ${m.vacDays} ימי חופשה</span>` : ''}
+          ${m.notes    ? `<span class="me-chip">📝 ${m.notes}</span>` : ''}
         </div>
         <div class="me-total">₪${Number(total).toLocaleString()}</div>
       </div>
@@ -476,11 +572,12 @@ function renderMonthsList() {
 
 function calcTotal(m) {
   const w = appData.worker;
-  const base = parseFloat(m.base) || 0;
-  const shabs = (m.shabbats||[]).length * (parseFloat(w.shabbatBonus)||0);
-  const hols = (m.holidays||[]).length * (parseFloat(w.holidayBonus)||0);
-  const exp = parseFloat(m.expenses) || 0;
-  return base + shabs + hols + exp;
+  const base  = parseFloat(m.base)     || 0;
+  const shabs = (m.shabbats||[]).length   * (parseFloat(w.shabbatBonus)||0);
+  const hols  = ((m.holidays||[]).length + (m.customVacDays||[]).length) * (parseFloat(w.holidayBonus)||0);
+  const exp   = parseFloat(m.expenses) || 0;
+  const havra = parseFloat(m.havra)    || 0;
+  return base + shabs + hols + exp + havra;
 }
 
 // ─────────────── MODAL ───────────────
@@ -501,20 +598,33 @@ function openMonthModal(key = null, pdfOnly = false) {
     document.getElementById('modal-title-text').textContent = 'עריכת חודש';
     document.getElementById('delete-month-btn').style.display = 'inline-flex';
     setV('m-month', key);
-    setV('m-base', m.base);
+    setV('m-base',     m.base);
     setV('m-expenses', m.expenses || 0);
-    setV('m-vac-days', m.vacDays || 0);
-    setV('m-notes', m.notes || '');
+    setV('m-havra',    m.havra    || 0);
+    setV('m-vac-days', m.vacDays  || 0);
+    setV('m-notes',    m.notes    || '');
     const [yr, mo] = key.split('-').map(Number);
     calState.year = yr;
     calState.month = mo - 1;
     calState.workedShabbats = new Set(m.shabbats || []);
     calState.workedHolidays = new Set(m.holidays || []);
     calState.customVacDays  = new Set(m.customVacDays || []);
+    setTimeout(() => applyModalPaidState(key), 50);
   } else {
     document.getElementById('editing-month-key').value = '';
     document.getElementById('modal-title-text').textContent = pdfOnly ? 'בחר חודש לדוח PDF' : 'הוספת חודש חדש';
     document.getElementById('delete-month-btn').style.display = 'none';
+    // ודא שהכל פתוח לעריכה לחודש חדש
+    const fields = ['m-base','m-expenses','m-havra','m-vac-days','m-notes','m-month'];
+    fields.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = false; });
+    const grid = document.getElementById('cal-grid');
+    if (grid) grid.style.pointerEvents = 'auto';
+    const saveBtn = document.getElementById('save-month-btn');
+    if (saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = '1'; }
+    const paidBtn = document.getElementById('mark-paid-btn');
+    if (paidBtn) paidBtn.style.display = 'none';
+    const banner = document.getElementById('paid-banner');
+    if (banner) banner.remove();
     const now = new Date();
     calState.year = now.getFullYear();
     calState.month = now.getMonth();
@@ -523,10 +633,11 @@ function openMonthModal(key = null, pdfOnly = false) {
     calState.customVacDays  = new Set();
     const monthStr = calState.year + '-' + String(calState.month + 1).padStart(2,'0');
     setV('m-month', monthStr);
-    setV('m-base', appData.worker.baseSalary || '');
+    setV('m-base',     appData.worker.baseSalary || '');
     setV('m-expenses', 0);
+    setV('m-havra',    0);
     setV('m-vac-days', 0);
-    setV('m-notes', '');
+    setV('m-notes',    '');
   }
   renderCalendar();
   updateSummary();
@@ -536,6 +647,18 @@ function openMonthModal(key = null, pdfOnly = false) {
 
 function closeModal() {
   document.getElementById('month-modal').classList.remove('open');
+  document.getElementById('editing-month-key').value = '';
+  // פתח את כל השדות לפעם הבאה
+  const fields = ['m-base','m-expenses','m-havra','m-vac-days','m-notes','m-month'];
+  fields.forEach(id => { const el = document.getElementById(id); if (el) el.disabled = false; });
+  const grid = document.getElementById('cal-grid');
+  if (grid) grid.style.pointerEvents = 'auto';
+  const saveBtn = document.getElementById('save-month-btn');
+  if (saveBtn) { saveBtn.disabled = false; saveBtn.style.opacity = '1'; }
+  const paidBtn = document.getElementById('mark-paid-btn');
+  if (paidBtn) paidBtn.style.display = 'none';
+  const banner = document.getElementById('paid-banner');
+  if (banner) banner.remove();
 }
 
 function saveMonth() {
@@ -628,18 +751,78 @@ function renderCalendar() {
 }
 
 function toggleDay(dateStr, isSat, isHol) {
+  const holTotal = appData.worker?.holTotal || 0;
+  const monthKey = v('m-month') || document.getElementById('editing-month-key')?.value;
+  const monthYear = monthKey ? parseInt(monthKey.split('-')[0]) : new Date().getFullYear();
+
   if (isSat) {
     if (calState.workedShabbats.has(dateStr)) calState.workedShabbats.delete(dateStr);
     else calState.workedShabbats.add(dateStr);
   } else if (isHol) {
-    if (calState.workedHolidays.has(dateStr)) calState.workedHolidays.delete(dateStr);
-    else calState.workedHolidays.add(dateStr);
+    if (calState.workedHolidays.has(dateStr)) {
+      calState.workedHolidays.delete(dateStr);
+    } else {
+      // תיקון 1: בדוק שלא חרגנו ממכסת ימי החג השנתית
+      const currentUsed = calcHolUsed(monthYear);
+      const pendingCustom = calState.customVacDays.size;
+      const pendingHol = calState.workedHolidays.size + 1; // +1 לזה שמנסים להוסיף
+      if (holTotal > 0 && (currentUsed + pendingCustom + 1) > holTotal) {
+        toast(`⚠️ הגעת למכסת ${holTotal} ימי חג לשנה זו`);
+        return;
+      }
+      calState.workedHolidays.add(dateStr);
+    }
   } else {
-    // יום רגיל — toggle חג מותאם אישית (נספר בחגים)
+    // יום רגיל — toggle חג מותאם אישית
     if (calState.customVacDays.has(dateStr)) {
       calState.customVacDays.delete(dateStr);
     } else {
+      // תיקון 1: בדוק מכסה לחגים מותאמים גם
+      const currentUsed = calcHolUsed(monthYear);
+      if (holTotal > 0 && (currentUsed + 1) > holTotal) {
+        toast(`⚠️ הגעת למכסת ${holTotal} ימי חג לשנה זו`);
+        return;
+      }
       calState.customVacDays.add(dateStr);
+    }
+  }
+  renderCalendar();
+  updateCustomVacDisplay();
+}
+
+function onMonthInputChange() {
+  const val = v('m-month');
+  if (!val) return;
+  const [yr, mo] = val.split('-').map(Number);
+  calState.year  = yr;
+  calState.month = mo - 1;
+  // אם חודש קיים — טען את הנתונים שלו
+  if (appData.months[val]) {
+    const m = appData.months[val];
+    calState.workedShabbats = new Set(m.shabbats      || []);
+    calState.workedHolidays = new Set(m.holidays      || []);
+    calState.customVacDays  = new Set(m.customVacDays || []);
+  } else {
+    calState.workedShabbats = new Set();
+    calState.workedHolidays = new Set();
+    calState.customVacDays  = new Set();
+
+    // תיקון 1: התראת שנה חדשה — הצג יתרת חופשה מצטברת
+    if (mo === 1) {
+      const prevYear = yr - 1;
+      const hasPrevYear = Object.keys(appData.months).some(k => k.startsWith(prevYear + '-'));
+      if (hasPrevYear) {
+        const vacPerYear  = appData.worker?.vacTotal || 0;
+        const carriedOver = calcVacLeftAtEndOfYear(prevYear);
+        const totalNew    = carriedOver + vacPerYear;
+        if (carriedOver > 0) {
+          setTimeout(() => toast(
+            `🏖️ שנה חדשה ${yr} — ${carriedOver} ימים נותרו מ-${prevYear} + ${vacPerYear} ימים חדשים = ${totalNew} סה"כ`
+          ), 200);
+        } else {
+          setTimeout(() => toast(`🏖️ שנה חדשה ${yr} — ${vacPerYear} ימי חופשה זמינים`), 200);
+        }
+      }
     }
   }
   renderCalendar();
@@ -656,11 +839,12 @@ function updateSummary() {
   const nSab = calState.workedShabbats.size;
   const nHol = calState.workedHolidays.size + calState.customVacDays.size;
   const w = appData.worker;
-  const base = parseFloat(v('m-base')) || parseFloat(w.baseSalary) || 0;
-  const sabBonus = parseFloat(w.shabbatBonus) || 0;
-  const holBonus = parseFloat(w.holidayBonus) || 0;
-  const exp = parseFloat(v('m-expenses')) || 0;
-  const total = base + nSab * sabBonus + nHol * holBonus + exp;
+  const base     = parseFloat(v('m-base'))     || parseFloat(w.baseSalary) || 0;
+  const sabBonus = parseFloat(w.shabbatBonus)  || 0;
+  const holBonus = parseFloat(w.holidayBonus)  || 0;
+  const exp      = parseFloat(v('m-expenses')) || 0;
+  const havra    = parseFloat(v('m-havra'))    || 0;
+  const total    = base + nSab * sabBonus + nHol * holBonus + exp + havra;
 
   setText('sum-shabbat', nSab);
   setText('sum-holidays', nHol);
@@ -685,15 +869,21 @@ function generatePDF() {
   const nHol     = calState.workedHolidays.size;
   const base     = parseFloat(v('m-base'))     || 0;
   const exp      = parseFloat(v('m-expenses')) || 0;
+  const havra    = parseFloat(v('m-havra'))    || 0;
   const sabBonus = parseFloat(w.shabbatBonus)  || 0;
   const holBonus = parseFloat(w.holidayBonus)  || 0;
-  const gross    = base + nSab * sabBonus + nHol * holBonus + exp;
+  const gross    = base + nSab * sabBonus + nHol * holBonus + exp + havra;
 
-  const bituachAmt  = (base * (r.bituach || 0)) / 100;
-  const pensionAmt  = (base * (r.pension  || 0)) / 100;
-  const havraDays   = calcHavraDays(w.startDate);
-  const havraAmt    = ((r.havraRate || 378) * havraDays) / 12;
-  const totalEmployer = bituachAmt + pensionAmt + havraAmt;
+  // חשב מספר חודש רצוף מתחילת העסקה (לצורך פנסיה ופיצויים)
+  const sortedKeys = Object.keys(appData.months).sort();
+  const monthNum   = sortedKeys.indexOf(key) + 1 || 99;
+
+  const bituachAmt   = (base * (r.bituach   || 0)) / 100;
+  const pensionAmt   = (base * (r.pension   || 6.5))  / 100;
+  const severanceAmt = (base * (r.severance || 8.33)) / 100;
+  const havraDays    = calcHavraDays(w.startDate);
+  const havraAmt     = ((r.havraRate || 378) * havraDays) / 12;
+  const totalEmployer = bituachAmt + pensionAmt + severanceAmt + havraAmt;
   const totalCost   = gross + totalEmployer;
 
   const dayNames = ['א','ב','ג','ד','ה','ו','ש'];
@@ -701,20 +891,24 @@ function generatePDF() {
   for (let i = 0; i < firstDay; i++) calCells += '<div></div>';
   for (let d = 1; d <= daysInMonth; d++) {
     const ds = `${yr}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const isSat   = isShabbat(ds);
-    const holInfo = getHolidayInfo(ds, nationalities);
-    const wSab    = calState.workedShabbats.has(ds);
-    const wHol    = calState.workedHolidays.has(ds);
+    const isSat      = isShabbat(ds);
+    const holInfo    = getHolidayInfo(ds, nationalities);
+    const wSab       = calState.workedShabbats.has(ds);
+    const wHol       = calState.workedHolidays.has(ds);
+    const wCustomHol = calState.customVacDays.has(ds);  // תיקון 2
     let cls = 'day';
-    if      (wSab)   cls += ' wsab';
-    else if (wHol)   cls += ' whol';
-    else if (isSat)  cls += ' sat';
-    else if (holInfo) cls += ' hol';
-    calCells += `<div class="${cls}">${d}</div>`;
+    if      (wSab)        cls += ' wsab';
+    else if (wHol)        cls += ' whol';
+    else if (wCustomHol)  cls += ' wcustom';  // חג מותאם
+    else if (isSat)       cls += ' sat';
+    else if (holInfo)     cls += ' hol';
+    calCells += `<div class="${cls}" title="${wCustomHol ? 'חג מותאם' : (holInfo?.name || '')}">${d}</div>`;
   }
 
-  const holUsed = calcHolUsed();
+  const holUsed = calcHolUsed(parseInt(yr));
   const vacUsed = calcTotalVacUsed();
+  const vacLeft = calcVacLeftAtEndOfYear(parseInt(yr));
+  const holLeft = Math.max(0, (w.holTotal||0) - holUsed);
   const seniorityText = calcSeniorityText(w.startDate);
 
   const html = `<!DOCTYPE html>
@@ -744,6 +938,7 @@ function generatePDF() {
   table.pay td:last-child{text-align:left;font-weight:600}
   tr.shab td{color:#e65100;background:#fff8f0}
   tr.holr td{color:#5e35b1;background:#f9f7ff}
+  tr.havrar td{color:#0277bd;background:#e1f5fe}
   tr.gross-row td{background:#eff6ff;font-weight:700;color:#1d4ed8;font-size:14px}
   tr.total-row td{background:#5b7fff;color:#fff;font-weight:900;font-size:15px}
   tr.cost-row td{color:#555;font-size:12px}
@@ -753,6 +948,7 @@ function generatePDF() {
   .day{text-align:center;padding:5px 2px;border-radius:5px;font-size:11px;border:1px solid #eee;min-height:26px}
   .wsab{background:#fff3e0;color:#e65100;border-color:#f97316;font-weight:700}
   .whol{background:#ede7f6;color:#5e35b1;border-color:#818cf8;font-weight:700}
+  .wcustom{background:#e8f5e9;color:#2e7d32;border-color:#66bb6a;font-weight:700}
   .sat{color:#f97316;border-color:#ffe0cc}
   .hol{color:#818cf8;border-color:#e0e0ff}
   .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:10px;color:#555;margin-bottom:16px}
@@ -778,7 +974,7 @@ function generatePDF() {
 <button class="print-btn" onclick="window.print()">🖨️ הדפס / שמור PDF</button>
 <div class="header">
   <div>
-    <div class="header-logo">שכרון ✦</div>
+    <div class="header-logo">מטפל ✦</div>
     <div class="header-sub">תלוש שכר רשמי &nbsp;|&nbsp; <span class="en">Official Pay Slip</span></div>
   </div>
   <div class="header-month">
@@ -813,13 +1009,15 @@ function generatePDF() {
   <tr><td>שכר בסיס / Base Salary</td><td>₪${base.toLocaleString()}</td></tr>
   ${nSab ? `<tr class="shab"><td>תוספת שבת / Shabbat (${nSab}×₪${sabBonus})</td><td>₪${(nSab*sabBonus).toLocaleString()}</td></tr>` : ''}
   ${nHol ? `<tr class="holr"><td>תוספת חג / Holiday (${nHol}×₪${holBonus})</td><td>₪${(nHol*holBonus).toLocaleString()}</td></tr>` : ''}
-  ${exp  ? `<tr><td>החזר הוצאות / Expenses</td><td>₪${exp.toLocaleString()}</td></tr>` : ''}
+  ${exp   ? `<tr><td>החזר הוצאות / Expenses</td><td>₪${exp.toLocaleString()}</td></tr>` : ''}
+  ${havra ? `<tr class="havrar"><td>הבראה / Recreation</td><td>₪${havra.toLocaleString()}</td></tr>` : ''}
   <tr class="total-row"><td>סה"כ לעובדת / Total to Employee</td><td>₪${gross.toLocaleString()}</td></tr>
 </table>
 <div class="section-title">🏢 הוצאות מעסיק / Employer Costs</div>
 <table class="pay">
   <tr class="cost-row"><td>ביטוח לאומי / National Insurance (${r.bituach||0}%)</td><td>₪${bituachAmt.toFixed(0)}</td></tr>
-  <tr class="cost-row"><td>פנסיה / Pension (${r.pension||0}%)</td><td>₪${pensionAmt.toFixed(0)}</td></tr>
+  <tr class="cost-row"><td>פנסיה / Pension (${r.pension||6.5}%)</td><td>₪${pensionAmt.toFixed(0)}</td></tr>
+  <tr class="cost-row"><td>פיצויים / Severance (${r.severance||8.33}%)</td><td>₪${severanceAmt.toFixed(0)}</td></tr>
   <tr class="cost-row"><td>הבראה / Recreation (${havraDays} days/12)</td><td>₪${havraAmt.toFixed(0)}</td></tr>
   <tr class="employer"><td>סה"כ הוצאות מעסיק / Total Employer</td><td>₪${totalEmployer.toFixed(0)}</td></tr>
   <tr class="total-row"><td>עלות כוללת / Total Cost</td><td>₪${totalCost.toFixed(0)}</td></tr>
@@ -833,13 +1031,13 @@ function generatePDF() {
 <div class="vac-row">
   <div class="vac-box hol">
     <div class="vb-title">🎉 ימי חג / Holidays</div>
-    <div class="vb-val purple">${Math.max(0,(w.holTotal||0)-holUsed)}</div>
+    <div class="vb-val purple">${holLeft}</div>
     <div class="vb-sub">נותרו מתוך ${w.holTotal||0} (נוצלו ${holUsed})</div>
   </div>
   <div class="vac-box vac">
     <div class="vb-title">🏖️ ימי חופשה / Vacation</div>
-    <div class="vb-val green">${Math.max(0,(w.vacTotal||0)-vacUsed)}</div>
-    <div class="vb-sub">נותרו מתוך ${w.vacTotal||0} (נוצלו ${vacUsed})</div>
+    <div class="vb-val green">${vacLeft}</div>
+    <div class="vb-sub">נותרו מצטבר (נוצלו ${vacUsed} סה"כ)</div>
   </div>
 </div>
 <div style="margin-top:24px;padding-top:16px;border-top:1px solid #eee;">
@@ -853,7 +1051,7 @@ function generatePDF() {
     <div class="sig-box"><div class="sig-space"></div><div style="font-size:12px;font-weight:600;">חתימת העובדת / Employee</div><div style="font-size:11px;color:#aaa;margin-top:6px;">קיבלתי שכרי / Received in full</div></div>
   </div>
 </div>
-<div class="footer">הופק ע"י שכרון ✦ • Generated by Shakaron • ${new Date().toLocaleDateString('he-IL')}</div>
+<div class="footer">הופק ע"י מטפל ✦ • Generated by Metapel • ${new Date().toLocaleDateString('he-IL')}</div>
 </body></html>`;
 
   const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
@@ -914,7 +1112,7 @@ function exportJSON() {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'shakaron_' + new Date().toISOString().slice(0,10) + '.json';
+  a.download = 'metapel_' + new Date().toISOString().slice(0,10) + '.json';
   a.click();
   toast('נתונים יוצאו ✓');
 }
@@ -956,7 +1154,7 @@ async function syncGist() {
   const ghToken = localStorage.getItem('gh_token');
   const payload = { worker: appData.worker, months: appData.months, synced: new Date().toISOString() };
   const body = {
-    description: 'Shakaron – שכרון ניהול שכר עובדת',
+    description: 'Metapel – מטפל ניהול שכר עובדת',
     public: false,
     files: { 'shakaron_data.json': { content: JSON.stringify(payload, null, 2) } }
   };
@@ -1050,90 +1248,386 @@ function checkHavraAlert() {
   }
 }
 
-// הוסף הבראה לשדה ה-notes ולסכום החודשי
+// הוסף הבראה לשדה הבראה הייעודי
 function addHavraToMonth() {
   const rate  = appData.rates?.havraRate || 378;
   const days  = calcHavraDays(appData.worker?.startDate);
   const total = days * rate;
-  const notes = v('m-notes');
-  setV('m-notes', (notes ? notes + ' | ' : '') + `הבראה ${days} ימים ₪${total.toLocaleString()}`);
-  const expenses = parseFloat(v('m-expenses')) || 0;
-  setV('m-expenses', expenses + total);
+  setV('m-havra', total);
   updateSummary();
   renderModalEmployerCosts();
-  toast(`✓ הבראה ₪${total.toLocaleString()} נוספה להחזר הוצאות`);
+  toast(`✓ הבראה ₪${total.toLocaleString()} נוספה`);
   document.getElementById('havra-alert').style.display = 'none';
 }
+// ─────────────── ADMIN ───────────────
+
+function isAdmin() {
+  return currentUser?.app_metadata?.role === 'admin';
+}
+
+function applyAdminUI() {
+  const tab = document.getElementById('admin-nav-tab');
+  if (tab) tab.style.display = isAdmin() ? 'inline-flex' : 'none';
+}
+
+async function callAdminFunction(body) {
+  // קח token מ-localStorage ישירות — עוקף lock של Supabase
+  let token = null;
+  try {
+    const raw = localStorage.getItem('sb-ndnucfbchdxyhvpazxwe-auth-token');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      token = parsed?.access_token ?? parsed?.session?.access_token ?? null;
+    }
+  } catch(e) {}
+
+  // fallback ל-getSession
+  if (!token) {
+    const session = (await db.auth.getSession()).data.session;
+    token = session?.access_token;
+  }
+
+  if (!token) throw new Error('לא מחובר');
+
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/admin-create-user`, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${token}`,
+      'apikey':        SUPABASE_ANON,
+    },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || JSON.stringify(data));
+  return data;
+}
+
+async function loadAdminData() {
+  if (!isAdmin() || !db) return;
+  try {
+    const data = await callAdminFunction({ action: 'list_users' });
+    const users = data.users || [];
+
+    // סטטיסטיקות
+    const total   = users.length;
+    const premium = users.filter(u => u.plan === 'premium').length;
+    const week    = new Date(Date.now() - 7*24*60*60*1000).toISOString();
+    const active  = users.filter(u => u.last_sign_in > week).length;
+
+    setText('stat-total-users',   total);
+    setText('stat-premium-users', premium);
+    setText('stat-active-users',  active);
+
+    const [{ count: wCount }, { count: mCount }] = await Promise.all([
+      db.from('workers').select('*', { count: 'exact', head: true }),
+      db.from('months').select('*',  { count: 'exact', head: true }),
+    ]);
+    setText('stat-total-workers', wCount || 0);
+    setText('stat-total-months',  mCount || 0);
+
+    renderAdminUsersList(users);
+  } catch(e) {
+    console.error('loadAdminData error:', e.message);
+    toast('⚠️ שגיאה בטעינת נתוני אדמין: ' + e.message);
+  }
+}
+
+function renderAdminUsersList(users) {
+  const container = document.getElementById('admin-users-list');
+  if (!users.length) {
+    container.innerHTML = '<div style="text-align:center;padding:20px;">אין משתמשים</div>';
+    return;
+  }
+  const sorted = [...users].sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+  container.innerHTML = `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">
+    <thead><tr style="border-bottom:1px solid var(--border);color:var(--text3);">
+      <th style="padding:8px;text-align:right;">מייל</th>
+      <th style="padding:8px;text-align:right;">תוכנית</th>
+      <th style="padding:8px;text-align:right;">פרימיום עד</th>
+      <th style="padding:8px;text-align:right;">כניסה אחרונה</th>
+      <th style="padding:8px;text-align:right;">נרשם</th>
+      <th style="padding:8px;text-align:right;">פעולות</th>
+    </tr></thead><tbody>
+    ${sorted.map(u => {
+      const isPrem  = u.plan === 'premium';
+      const until   = u.plan_until ? new Date(u.plan_until).toLocaleDateString('he-IL') : '—';
+      const created = u.created_at ? new Date(u.created_at).toLocaleDateString('he-IL') : '—';
+      const lastIn  = u.last_sign_in ? new Date(u.last_sign_in).toLocaleDateString('he-IL') : 'טרם נכנס';
+      const badge   = isPrem
+        ? `<span style="background:rgba(251,191,36,0.15);color:var(--warn);border-radius:10px;padding:2px 8px;font-size:11px;font-weight:700;">⭐ פרימיום</span>`
+        : `<span style="background:var(--surface2);color:var(--text3);border-radius:10px;padding:2px 8px;font-size:11px;">חינמי</span>`;
+      const adminBadge = u.role === 'admin'
+        ? `<span style="background:rgba(248,113,113,0.15);color:var(--danger);border-radius:10px;padding:2px 6px;font-size:10px;margin-right:4px;">🛡️ אדמין</span>`
+        : '';
+      return `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:10px 8px;font-weight:500;">${adminBadge}${u.email||'—'}</td>
+        <td style="padding:10px 8px;">${badge}</td>
+        <td style="padding:10px 8px;color:var(--text2);">${until}</td>
+        <td style="padding:10px 8px;color:var(--text3);">${lastIn}</td>
+        <td style="padding:10px 8px;color:var(--text3);">${created}</td>
+        <td style="padding:10px 8px;">
+          <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          ${u.role !== 'admin'
+            ? `<button class="btn btn-sm" style="font-size:11px;background:rgba(91,127,255,0.1);border-color:var(--accent);color:var(--accent);" onclick="openAdminEdit('${u.email}','${u.plan||'free'}','${u.plan_until||''}')">✏️ ערוך</button>`
+            : ''}
+          <button class="btn btn-sm" style="font-size:11px;" onclick="adminSetPassword('${u.email}')">🔑 סיסמה</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('')}
+    </tbody></table></div>`;
+}
+
+async function adminAddUser() {
+  if (!isAdmin() || !db) return;
+  const email    = v('admin-new-email').trim();
+  const password = v('admin-new-password');
+  const plan     = v('admin-new-plan');
+  const until    = v('admin-new-plan-until');
+  const msg      = document.getElementById('admin-add-msg');
+  if (!email || !password) { toast('נא למלא מייל וסיסמה'); return; }
+  if (password.length < 8)  { toast('סיסמה חייבת להיות לפחות 8 תווים'); return; }
+
+  msg.style.display = 'block';
+  msg.style.color   = 'var(--text2)';
+  msg.textContent   = 'יוצר משתמש...';
+
+  try {
+    const data = await callAdminFunction({
+      action:     'create_user',
+      email,
+      password,
+      plan,
+      plan_until: until || null,
+    });
+
+    msg.style.color = 'var(--success)';
+    msg.textContent = `✓ משתמש ${email} נוצר בהצלחה`;
+    setV('admin-new-email',''); setV('admin-new-password','');
+    setTimeout(() => loadAdminData(), 800);
+  } catch(e) {
+    msg.style.color = 'var(--danger)';
+    msg.textContent = '⚠️ ' + e.message;
+  }
+}
+
+function openAdminEdit(email, plan, planUntil) {
+  const modal = document.getElementById('admin-edit-modal');
+  modal.style.display = 'flex';
+  document.getElementById('admin-edit-email-label').textContent = email;
+  modal.dataset.email = email;
+  setV('admin-edit-plan', plan || 'free');
+  setV('admin-edit-plan-until', planUntil || '');
+}
+
+function closeAdminEdit() {
+  document.getElementById('admin-edit-modal').style.display = 'none';
+}
+
+async function adminSaveEdit() {
+  const email    = document.getElementById('admin-edit-modal').dataset.email;
+  const plan     = v('admin-edit-plan');
+  const until    = v('admin-edit-plan-until');
+  const enable   = plan === 'premium';
+  try {
+    await callAdminFunction({
+      action:     'set_premium',
+      email,
+      enable,
+      plan_until: enable ? (until || new Date(Date.now()+365*24*60*60*1000).toISOString().split('T')[0]) : null,
+    });
+    toast(`✓ ${email} עודכן ל${enable ? 'פרימיום' : 'חינמי'}`);
+    closeAdminEdit();
+    setTimeout(() => loadAdminData(), 500);
+  } catch(e) {
+    toast('⚠️ שגיאה: ' + e.message);
+  }
+}
+
+async function adminSetPassword(email) {
+  const newPass = prompt(`סיסמה חדשה עבור ${email}:\n(לפחות 8 תווים)`);
+  if (!newPass) return;
+  if (newPass.length < 8) { toast('סיסמה חייבת להיות לפחות 8 תווים'); return; }
+  try {
+    await callAdminFunction({ action: 'set_password', email, password: newPass });
+    toast(`✓ סיסמה עודכנה עבור ${email}`);
+  } catch(e) {
+    toast('⚠️ שגיאה: ' + e.message);
+  }
+}
+
+async function adminSetPremium(email, enable) {
+  if (!isAdmin() || !db) return;
+  try {
+    const until = enable ? new Date(Date.now()+365*24*60*60*1000).toISOString().split('T')[0] : null;
+    await callAdminFunction({ action: 'set_premium', email, enable, plan_until: until });
+    toast(enable ? `✓ ${email} — פרימיום` : `✓ הוסר פרימיום`);
+    setTimeout(() => loadAdminData(), 500);
+  } catch(e) {
+    toast('⚠️ שגיאה: ' + e.message);
+  }
+}
+
 // ─────────────── TERMINATION REPORT (דוח סיום) ───────────────
 
 function calcTermination() {
   const endDate   = v('term-end-date');
-  const salary    = parseFloat(v('term-salary')) || 0;
-  const unusedVac = parseInt(v('term-unused-vac')) || 0;
   const reason    = v('term-reason');
+  const extra     = parseFloat(v('term-extra'))     || 0;
+  const extraNote = v('term-extra-note') || 'תשלום נוסף';
   const startDate = appData.worker?.startDate;
+  const w         = appData.worker || {};
+  const r         = appData.rates  || {};
 
-  if (!endDate || !salary || !startDate) return;
+  if (!endDate || !startDate) return;
 
-  const start  = new Date(startDate);
-  const end    = new Date(endDate);
+  const start = new Date(startDate + 'T12:00:00');
+  const end   = new Date(endDate   + 'T12:00:00');
 
-  // חישוב מדויק של שנים לפי תאריך (לא ms)
-  let years = end.getFullYear() - start.getFullYear();
-  const monthDiff = end.getMonth() - start.getMonth();
-  const dayDiff   = end.getDate()  - start.getDate();
-  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) years--;
+  // חישוב שנים מדויק
   const remainMonths = ((end.getFullYear() * 12 + end.getMonth()) -
                         (start.getFullYear() * 12 + start.getMonth()));
-  const exactYears = remainMonths / 12 + (dayDiff >= 0 ? 0 : -1/365);
-
+  const dayDiff      = end.getDate() - start.getDate();
+  const exactYears   = remainMonths / 12 + (dayDiff >= 0 ? 0 : -1/365);
   if (exactYears < 0) { toast('תאריך סיום לפני תאריך התחלה'); return; }
 
-  const dailySalary = salary / 25;
+  // שכר אחרון — לפי החודש האחרון שנשמר
+  const sortedMonths = Object.entries(appData.months).sort((a,b) => b[0].localeCompare(a[0]));
+  const lastMonth    = sortedMonths[0]?.[1];
+  const lastSalary   = lastMonth?.base || parseFloat(w.baseSalary) || 0;
+  // תעריף יומי — שכר חודשי / 22 ימי עבודה
+  const dailySalary  = lastSalary / 22;
+
+  // endYear ו-endMonth — נדרשים לחישוב הבראה וחופשה
+  const endYear    = end.getFullYear();
+  const endMonth   = end.getMonth() + 1;
+
+  // ימי חופשה לפדיון — לפי תאריך הסיום (לא היום)
+  const vacLeft    = calcVacLeftAtEndOfYear(endYear);
+
   const rows = [];
   let total  = 0;
 
-  // 1. פיצויי פיטורים (רק בפיטורים / הסכמה)
-  if (reason !== 'resigned') {
-    const severance = salary * exactYears;
-    rows.push({ label: `פיצויי פיטורים (${exactYears.toFixed(2)} שנים × ₪${salary.toLocaleString()})`, amount: severance, color: 'var(--danger)' });
-    total += severance;
+  // 1. פנסיה ופיצויים — לפי ותק וחוק
+  const pensionRate   = (r.pension   || 6.5)  / 100;
+  const severanceRate = (r.severance || 8.33) / 100;
+
+  // חשב לפי חודשים בפועל
+  const sortedEntries = Object.entries(appData.months).sort((a,b) => a[0].localeCompare(b[0]));
+  let totalPension   = 0;
+  let totalSeverance = 0;
+  let monthIndex     = 0;
+
+  for (const [, m] of sortedEntries) {
+    monthIndex++;
+    const base = parseFloat(m.base) || 0;
+
+    // פנסיה — מחודש 7 בלבד
+    if (monthIndex >= 7) {
+      totalPension += base * pensionRate;
+    }
+
+    // פיצויים:
+    // פחות משנה (< 12 חודשים) — 6% מחודש 7
+    // שנה ומעלה — 8.33% מחודש 1
+    if (exactYears >= 1) {
+      totalSeverance += base * severanceRate; // 8.33% מהחודש הראשון
+    } else if (monthIndex >= 7) {
+      totalSeverance += base * 0.06; // 6% מחודש 7 בלבד
+    }
   }
 
-  // 2. הודעה מוקדמת
-  const noticeMonths = Math.min(Math.floor(exactYears), 6);
-  if (noticeMonths > 0) {
-    const noticePay = salary * noticeMonths;
-    rows.push({ label: `הודעה מוקדמת (${noticeMonths} חודשים)`, amount: noticePay, color: 'var(--warn)' });
-    total += noticePay;
+  if (totalPension > 0) {
+    rows.push({
+      label: `פנסיה/ביטוחי (${r.pension||6.5}% × שכר מחודש 7)`,
+      amount: totalPension, color: 'var(--accent2)'
+    });
+    total += totalPension;
   }
 
-  // 3. פדיון חופשה
-  if (unusedVac > 0) {
-    const vacPay = dailySalary * unusedVac;
-    rows.push({ label: `פדיון חופשה (${unusedVac} ימים × ₪${dailySalary.toFixed(0)})`, amount: vacPay, color: 'var(--success)' });
+  if (totalSeverance > 0) {
+    const sevLabel = exactYears >= 1
+      ? `פיצויים (${r.severance||8.33}% × כל החודשים)`
+      : `פיצויים (6% × חודשים 7+, פחות משנה)`;
+    rows.push({ label: sevLabel, amount: totalSeverance, color: 'var(--danger)' });
+    total += totalSeverance;
+  }
+
+  // 2. הבראה שלא שולמה מיולי האחרון
+  const havraRate  = r.havraRate || 378;
+  const havraDays  = calcHavraDays(startDate);
+  const havraMonth = parseInt(r.havraMonth || '7');
+
+  // מצא את יולי האחרון שהיה לפני תאריך הסיום
+  let lastHavraYear = endYear;
+  if (endMonth < havraMonth) lastHavraYear = endYear - 1;
+
+  // בדוק כמה חודשים עברו מאז תשלום ההבראה האחרון
+  const monthsSinceHavra = (end.getFullYear() * 12 + end.getMonth()) -
+                           (lastHavraYear * 12 + (havraMonth - 1));
+  if (monthsSinceHavra > 0 && monthsSinceHavra < 12) {
+    const havraOwed = (havraRate * havraDays * monthsSinceHavra) / 12;
+    rows.push({
+      label: `הבראה יחסית (${monthsSinceHavra} חודשים מיולי ${lastHavraYear})`,
+      amount: havraOwed, color: 'var(--warn)'
+    });
+    total += havraOwed;
+  }
+
+  // 3. פדיון חופשה שנותרה
+  if (vacLeft > 0) {
+    const vacPay = dailySalary * vacLeft;
+    rows.push({
+      label: `פדיון חופשה (${vacLeft} ימים × ₪${dailySalary.toFixed(0)})`,
+      amount: vacPay, color: 'var(--success)'
+    });
     total += vacPay;
   }
 
-  // 4. הבראה יחסית לשנה האחרונה
-  const fullYears = Math.floor(exactYears);
-  const lastYearFraction = exactYears - fullYears;
-  if (lastYearFraction > 0.01) {
-    const havraRate = appData.rates?.havraRate || 378;
-    const havraDays = calcHavraDays(startDate);
-    const havraPro  = havraRate * havraDays * lastYearFraction;
-    rows.push({ label: `הבראה יחסית (${(lastYearFraction * 12).toFixed(1)} חודשים)`, amount: havraPro, color: 'var(--holiday)' });
-    total += havraPro;
-  }
-
-  // 5. שכר חלקי לחודש האחרון
+  // 4. שכר חלקי לחודש האחרון
   const lastMonthDays = end.getDate();
   const daysInMonth   = new Date(end.getFullYear(), end.getMonth()+1, 0).getDate();
   if (lastMonthDays < daysInMonth) {
-    const partialSalary = (salary / daysInMonth) * lastMonthDays;
-    rows.push({ label: `שכר חלקי (${lastMonthDays}/${daysInMonth} ימים)`, amount: partialSalary, color: 'var(--accent)' });
+    const partialSalary = (lastSalary / daysInMonth) * lastMonthDays;
+    rows.push({
+      label: `שכר חלקי חודש אחרון (${lastMonthDays}/${daysInMonth} ימים × ₪${lastSalary.toLocaleString()})`,
+      amount: partialSalary, color: 'var(--accent)'
+    });
     total += partialSalary;
   }
+
+  // 5. הודעה מוקדמת (בפיטורים)
+  if (reason !== 'resigned') {
+    const noticeMonths = Math.min(Math.floor(exactYears), 6);
+    if (noticeMonths > 0) {
+      const noticePay = lastSalary * noticeMonths;
+      rows.push({
+        label: `הודעה מוקדמת (${noticeMonths} חודשים × ₪${lastSalary.toLocaleString()})`,
+        amount: noticePay, color: 'var(--holiday)'
+      });
+      total += noticePay;
+    }
+  }
+
+  // 6. תשלום נוסף לאיזון
+  if (extra > 0) {
+    rows.push({ label: extraNote, amount: extra, color: 'var(--text2)' });
+    total += extra;
+  }
+
+  // סיכום מידע
+  const infoHtml = `
+    <div style="background:rgba(91,127,255,0.06);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;color:var(--text2);">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <span>תחילת עבודה: <strong>${startDate}</strong></span>
+        <span>תאריך סיום: <strong>${endDate}</strong></span>
+        <span>ותק: <strong>${exactYears.toFixed(2)} שנים</strong></span>
+        <span>שכר אחרון: <strong>₪${lastSalary.toLocaleString()}</strong></span>
+        <span>ימי חופשה לפדיון: <strong>${vacLeft}</strong></span>
+        <span>סיבת סיום: <strong>${reason === 'fired' ? 'פיטורים' : reason === 'resigned' ? 'התפטרות' : 'הסכמה הדדית'}</strong></span>
+      </div>
+    </div>`;
 
   const rowsHtml = rows.map(r => `
     <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border);">
@@ -1141,11 +1635,11 @@ function calcTermination() {
       <span style="font-weight:700;color:${r.color};">₪${r.amount.toLocaleString('he-IL',{maximumFractionDigits:0})}</span>
     </div>`).join('');
 
-  document.getElementById('term-rows').innerHTML = rowsHtml;
+  document.getElementById('term-rows').innerHTML = infoHtml + rowsHtml;
   setText('term-total', '₪' + total.toLocaleString('he-IL', {maximumFractionDigits:0}));
   document.getElementById('termination-result').style.display = 'block';
   document.getElementById('termination-placeholder').style.display = 'none';
-  window._termData = { rows, total, years: exactYears, startDate, endDate, reason, salary };
+  window._termData = { rows, total, years: exactYears, startDate, endDate, reason, salary: lastSalary };
 }
 
 function generateTerminationPDF() {
@@ -1187,7 +1681,7 @@ function generateTerminationPDF() {
 <body>
 <button class="print-btn" onclick="window.print()">🖨️ הדפס / שמור PDF</button>
 <h1>דוח סיום התקשרות</h1>
-<div class="sub">שכרון ✦ — ${new Date().toLocaleDateString('he-IL')}</div>
+<div class="sub">מטפל ✦ — ${new Date().toLocaleDateString('he-IL')}</div>
 <div class="grid">
   <div class="box">
     <div class="box-title">פרטי עובדת</div>
@@ -1217,7 +1711,7 @@ function generateTerminationPDF() {
   <div class="sig-box"><div>חתימת המעסיק</div><br/><br/><div>תאריך: ___________</div></div>
   <div class="sig-box"><div>חתימת העובדת</div><br/><br/><div>קיבלתי את מלוא הסכום המגיע לי</div></div>
 </div>
-<div class="footer">הופק ע"י שכרון ✦ • ${new Date().toLocaleDateString('he-IL')} • אינו מהווה ייעוץ משפטי</div>
+<div class="footer">הופק ע"י מטפל ✦ • ${new Date().toLocaleDateString('he-IL')} • אינו מהווה ייעוץ משפטי</div>
 </body></html>`;
 
   const blob = new Blob([html], {type:'text/html;charset=utf-8'});
@@ -1233,7 +1727,72 @@ function generateTerminationPDF() {
   toast('דוח סיום נפתח – לחץ הדפס לשמירת PDF');
 }
 
-// ─────────────── ALERTS SYSTEM ───────────────
+// ─────────────── PAID STATUS ───────────────
+
+function toggleMonthPaid() {
+  const key = document.getElementById('editing-month-key')?.value;
+  if (!key) return;
+  const m = appData.months[key];
+  if (!m) return;
+
+  m.paid = !m.paid;
+  saveLocal();
+  applyModalPaidState(key);
+  toast(m.paid ? '✅ החודש סומן כשולם ונעול לעריכה' : '🔓 החודש פתוח לעריכה');
+  renderMonthsList();
+
+  // שמור ב-DB
+  if (typeof saveMonthPaidStatus === 'function') saveMonthPaidStatus(key, m.paid);
+}
+
+function applyModalPaidState(key) {
+  const m = appData.months[key];
+  const paid = m?.paid || false;
+  const saveBtn    = document.getElementById('save-month-btn');
+  const paidBtn    = document.getElementById('mark-paid-btn');
+  const deleteBtn  = document.getElementById('delete-month-btn');
+
+  // נעל/פתח שדות
+  const fields = ['m-base','m-expenses','m-havra','m-vac-days','m-notes','m-month'];
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.disabled = paid;
+  });
+
+  // נעל לחיצה על לוח שנה
+  const grid = document.getElementById('cal-grid');
+  if (grid) grid.style.pointerEvents = paid ? 'none' : 'auto';
+
+  // עדכן כפתורים
+  if (saveBtn) {
+    saveBtn.disabled = paid;
+    saveBtn.style.opacity = paid ? '0.4' : '1';
+  }
+  if (deleteBtn) deleteBtn.style.display = paid ? 'none' : 'inline-flex';
+  if (paidBtn) {
+    paidBtn.style.display = key ? 'inline-flex' : 'none';
+    if (paid) {
+      paidBtn.textContent = '🔒 שולם — לחץ לביטול';
+      paidBtn.style.background = 'rgba(52,211,153,0.25)';
+    } else {
+      paidBtn.textContent = '✓ סמן כשולם';
+      paidBtn.style.background = 'rgba(52,211,153,0.15)';
+    }
+  }
+
+  // באנר נעילה
+  let banner = document.getElementById('paid-banner');
+  if (paid && !banner) {
+    banner = document.createElement('div');
+    banner.id = 'paid-banner';
+    banner.style.cssText = 'background:rgba(52,211,153,0.1);border:1px solid var(--success);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:13px;color:var(--success);font-weight:600;';
+    banner.innerHTML = '🔒 החודש שולם — מוצג בקריאה בלבד. לחץ "שולם" כדי לערוך.';
+    const form = document.querySelector('.modal-body');
+    if (form) form.insertBefore(banner, form.firstChild);
+  } else if (!paid && banner) {
+    banner.remove();
+  }
+}
 
 function renderAlerts() {
   const container = document.getElementById('alerts-container');
@@ -1437,9 +1996,9 @@ async function syncSignupsToGist(signups) {
   if (!token) return;
   const gistId = localStorage.getItem('gh_signups_gist_id');
   const body = {
-    description: 'שכרון – רשימת הרשמות פרימיום',
+    description: 'מטפל – רשימת הרשמות פרימיום',
     public: false,
-    files: { 'shakaron_signups.json': { content: JSON.stringify(signups, null, 2) } }
+    files: { 'metapel_signups.json': { content: JSON.stringify(signups, null, 2) } }
   };
   try {
     let url = 'https://api.github.com/gists', method = 'POST';
@@ -1463,8 +2022,9 @@ function saveRates() {
   const havraMonthly = havraAnnual / 12;
 
   appData.rates = {
-    bituach:     parseFloat(v('r-bituach')) || 0,
-    pension:     parseFloat(v('r-pension')) || 0,
+    bituach:    parseFloat(v('r-bituach'))   || 0,
+    pension:    parseFloat(v('r-pension'))   || 0,
+    severance:  parseFloat(v('r-severance')) || 8.33,
     havraDays,
     havraRate,
     havraMonthly,
@@ -1482,20 +2042,22 @@ function saveRates() {
 
 function populateRatesForm() {
   const r = appData.rates || {};
-  setV('r-bituach',     r.bituach);
-  setV('r-pension',     r.pension);
-  setV('r-havra-rate',  r.havraRate);
+  setV('r-bituach',    r.bituach);
+  setV('r-pension',    r.pension);
+  setV('r-severance',  r.severance || 8.33);
+  setV('r-havra-rate', r.havraRate);
   setV('r-havra-month', r.havraMonth || '7');
   updateHavraPreview();
 }
 
-function calcEmployerCosts(grossSalary) {
-  const r = appData.rates || {};
-  const bituach      = (grossSalary * (r.bituach || 0)) / 100;
-  const pension      = (grossSalary * (r.pension  || 0)) / 100;
+function calcEmployerCosts(grossSalary, monthNum = 99) {
+  const r            = appData.rates || {};
+  const bituach      = (grossSalary * (r.bituach   || 0))    / 100;
+  const pension      = (grossSalary * (r.pension   || 6.5))  / 100;
+  const severance    = (grossSalary * (r.severance || 8.33)) / 100;
   const havraMonthly = ((r.havraRate || 0) * calcHavraDays(appData.worker?.startDate)) / 12;
-  const total        = bituach + pension + havraMonthly;
-  return { bituach, pension, havraMonthly, total };
+  const total        = bituach + pension + severance + havraMonthly;
+  return { bituach, pension, severance, severanceRate: r.severance || 8.33, havraMonthly, total };
 }
 
 // הצג הוצאות מעסיק בתוך מודל החודש
@@ -1508,7 +2070,8 @@ function renderModalEmployerCosts() {
   const r = appData.rates || {};
   const rows = [
     r.bituach      ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>ביטוח לאומי מעסיק (${r.bituach}%)</span><span>₪${c.bituach.toFixed(2)}</span></div>` : '',
-    r.pension      ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>פנסיה/קה״ש מעסיק (${r.pension}%)</span><span>₪${c.pension.toFixed(2)}</span></div>` : '',
+    c.pension > 0  ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>פנסיה/ביטוחי מעסיק (${r.pension||6.5}%)</span><span>₪${c.pension.toFixed(2)}</span></div>` : '<div style="font-size:11px;color:var(--text3);margin-bottom:4px;">פנסיה — מחודש 7</div>',
+    c.severance > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>פיצויים (${c.severanceRate}%)</span><span>₪${c.severance.toFixed(2)}</span></div>` : '<div style="font-size:11px;color:var(--text3);margin-bottom:4px;">פיצויים — לפי ותק</div>',
     c.havraMonthly ? `<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span>הבראה (${r.havraDays} ימים × ₪${r.havraRate} ÷ 12)</span><span>₪${c.havraMonthly.toFixed(2)}</span></div>` : '',
   ].filter(Boolean).join('');
   el.innerHTML = rows
@@ -1535,27 +2098,28 @@ function renderCostsScreen() {
 
   const w = appData.worker;
   const r = appData.rates || {};
-  let cumGross = 0, cumBituach = 0, cumPension = 0, cumHavra = 0, cumEmployer = 0;
+  let cumGross = 0, cumBituach = 0, cumPension = 0, cumSeverance = 0, cumHavra = 0, cumEmployer = 0;
 
-  const rows = months.map(([key, m]) => {
+  const rows = months.map(([key, m], idx) => {
     const [yr, mo] = key.split('-');
-    const label = HEB_MONTHS[parseInt(mo)-1] + ' ' + yr;
+    const label    = HEB_MONTHS[parseInt(mo)-1] + ' ' + yr;
+    const monthNum = idx + 1; // מספר חודש רצוף
 
-    // ברוטו מלא = בסיס + שבתות + חגים + החזר הוצאות
-    const base    = parseFloat(m.base) || 0;
+    const base     = parseFloat(m.base) || 0;
     const sabBonus = parseFloat(w.shabbatBonus) || 0;
     const holBonus = parseFloat(w.holidayBonus) || 0;
-    const nSab    = (m.shabbats || []).length;
-    const nHol    = (m.holidays || []).length;
-    const exp     = parseFloat(m.expenses) || 0;
-    const gross   = base + nSab * sabBonus + nHol * holBonus + exp;
+    const nSab     = (m.shabbats || []).length;
+    const nHol     = (m.holidays || []).length + (m.customVacDays || []).length;
+    const exp      = parseFloat(m.expenses) || 0;
+    const gross    = base + nSab * sabBonus + nHol * holBonus + exp;
 
-    const c = calcEmployerCosts(base); // ב"ל ופנסיה על שכר בסיס בלבד (נהוג)
-    cumGross    += gross;
-    cumBituach  += c.bituach;
-    cumPension  += c.pension;
-    cumHavra    += c.havraMonthly;
-    cumEmployer += c.total;
+    const c = calcEmployerCosts(base, monthNum);
+    cumGross     += gross;
+    cumBituach   += c.bituach;
+    cumPension   += c.pension;
+    cumSeverance += c.severance;
+    cumHavra     += c.havraMonthly;
+    cumEmployer  += c.total;
 
     const monthTotal = gross + c.total;
 
@@ -1569,8 +2133,7 @@ function renderCostsScreen() {
       <tr style="border-bottom:1px solid var(--border);">
         <td style="padding:10px 8px;font-weight:600;white-space:nowrap;">${label}</td>
         <td style="padding:10px 8px;text-align:left;">
-          <div style="font-weight:600;">₪${gross.toLocaleString()}</div>
-          ${detail}
+          <div style="font-weight:600;">₪${gross.toLocaleString()}</div>${detail}
         </td>
         <td style="padding:10px 8px;text-align:left;">
           <div style="font-weight:600;">₪${c.bituach.toFixed(0)}</div>
@@ -1578,11 +2141,15 @@ function renderCostsScreen() {
         </td>
         <td style="padding:10px 8px;text-align:left;">
           <div style="font-weight:600;">₪${c.pension.toFixed(0)}</div>
-          ${r.pension ? `<div style="font-size:11px;color:var(--text3);">${r.pension}%</div>` : ''}
+          ${c.pension > 0 ? `<div style="font-size:11px;color:var(--text3);">${r.pension||6.5}%</div>` : '<div style="font-size:11px;color:var(--text3);">מחודש 7</div>'}
+        </td>
+        <td style="padding:10px 8px;text-align:left;">
+          <div style="font-weight:600;">₪${c.severance.toFixed(0)}</div>
+          ${c.severance > 0 ? `<div style="font-size:11px;color:var(--text3);">${c.severanceRate}%</div>` : '<div style="font-size:11px;color:var(--text3);">—</div>'}
         </td>
         <td style="padding:10px 8px;text-align:left;">
           <div style="font-weight:600;">₪${c.havraMonthly.toFixed(0)}</div>
-          ${r.havraDays ? `<div style="font-size:11px;color:var(--text3);">${r.havraDays}י×₪${r.havraRate}÷12</div>` : ''}
+          ${r.havraDays ? `<div style="font-size:11px;color:var(--text3);">${r.havraDays}י÷12</div>` : ''}
         </td>
         <td style="padding:10px 8px;text-align:left;">
           <div style="font-weight:700;color:var(--warn);">₪${c.total.toFixed(0)}</div>
@@ -1603,21 +2170,21 @@ function renderCostsScreen() {
           <th style="padding:8px;text-align:right;font-weight:600;">חודש</th>
           <th style="padding:8px;text-align:left;font-weight:600;">ברוטו כולל</th>
           <th style="padding:8px;text-align:left;font-weight:600;">ביטוח לאומי</th>
-          <th style="padding:8px;text-align:left;font-weight:600;">פנסיה + פיצויים</th>
+          <th style="padding:8px;text-align:left;font-weight:600;">פנסיה</th>
+          <th style="padding:8px;text-align:left;font-weight:600;">פיצויים</th>
           <th style="padding:8px;text-align:left;font-weight:600;">הבראה</th>
           <th style="padding:8px;text-align:left;font-weight:600;color:var(--warn);">הוצ׳ מעסיק</th>
           <th style="padding:8px;text-align:left;font-weight:600;color:var(--danger);">עלות כוללת</th>
         </tr>
       </thead>
-      <tbody>
-        ${rows}
-      </tbody>
+      <tbody>${rows}</tbody>
       <tfoot>
         <tr style="border-top:2px solid var(--border);background:var(--surface2);">
           <td style="padding:12px 8px;font-weight:700;">סה״כ מצטבר</td>
           <td style="padding:12px 8px;text-align:left;font-weight:700;">₪${cumGross.toLocaleString()}</td>
           <td style="padding:12px 8px;text-align:left;font-weight:700;">₪${cumBituach.toFixed(0)}</td>
           <td style="padding:12px 8px;text-align:left;font-weight:700;">₪${cumPension.toFixed(0)}</td>
+          <td style="padding:12px 8px;text-align:left;font-weight:700;">₪${cumSeverance.toFixed(0)}</td>
           <td style="padding:12px 8px;text-align:left;font-weight:700;">₪${cumHavra.toFixed(0)}</td>
           <td style="padding:12px 8px;text-align:left;font-weight:700;color:var(--warn);">₪${cumEmployer.toFixed(0)}</td>
           <td style="padding:12px 8px;text-align:left;font-weight:700;color:var(--danger);">₪${totalAll.toFixed(0)}</td>
